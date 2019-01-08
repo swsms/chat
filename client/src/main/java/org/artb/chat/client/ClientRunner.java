@@ -3,29 +3,45 @@ package org.artb.chat.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Scanner;
 
 import static java.nio.channels.SelectionKey.OP_CONNECT;
 
 public class ClientRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRunner.class);
 
-    private static final int PORT = 10521;
+    private static final int PORT = 8999;
     private static final String HOST = "localhost";
 
     public static void main(String[] args) {
         try {
-            SocketChannel socket = SocketChannel.open();
+            SocketChannel socket = SocketChannel.open(new InetSocketAddress(HOST, PORT));
             socket.configureBlocking(false);
 
-            Selector selector = Selector.open();
+            ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-            socket.register(selector, OP_CONNECT);
-            socket.connect(new InetSocketAddress(HOST, PORT));
+            Scanner scanner = new Scanner(System.in);
+
+            String msg = scanner.nextLine();
+
+            buffer = ByteBuffer.wrap(msg.getBytes());
+
+            socket.write(buffer);
+            buffer.clear();
+
+            socket.read(buffer);
+            String response = new String(buffer.array()).trim();
+            buffer.clear();
+
+            LOGGER.info("Response: {}", response);
+
         } catch (Exception e) {
-            LOGGER.info("Cannot establish connection: {}", e.getMessage());
+            LOGGER.error("Cannot establish connection", e);
         }
     }
 }

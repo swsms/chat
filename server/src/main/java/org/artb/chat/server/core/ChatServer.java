@@ -10,10 +10,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -25,7 +24,9 @@ public class ChatServer {
     private final int port;
 
     private Selector selector;
-    private ServerSocketChannel socket;
+    private ServerSocketChannel serverSocket;
+
+    private ByteBuffer buffer = ByteBuffer.allocate(1024);
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -34,12 +35,12 @@ public class ChatServer {
 
     public void start() throws IOException {
         selector = Selector.open();
-        socket = ServerSocketChannel.open();
+        serverSocket = ServerSocketChannel.open();
 
-        socket.socket().setReuseAddress(true);
-        socket.bind(new InetSocketAddress(host, port));
-        socket.configureBlocking(false);
-        socket.register(selector, OP_ACCEPT);
+        serverSocket.socket().setReuseAddress(true);
+        serverSocket.bind(new InetSocketAddress(host, port));
+        serverSocket.configureBlocking(false);
+        serverSocket.register(selector, OP_ACCEPT);
 
         LOGGER.info("Server started on {}:{}", host, port);
 
@@ -59,19 +60,43 @@ public class ChatServer {
                     }
 
                     if (key.isAcceptable()) {
-                        register(selector, socket);
+                        register(selector);
+                    } else if (key.isReadable()) {
+                        echo(key);
                     }
                 }
             }
         }
     }
 
-    private void register(Selector selector, ServerSocketChannel socket)
-            throws IOException {
-
-        LOGGER.info("A new client is coming");
-        SocketChannel client = socket.accept();
-        client.configureBlocking(false);
-        client.register(selector, SelectionKey.OP_READ);
+    private void register(Selector selector) {
+        try {
+            SocketChannel client = serverSocket.accept();
+            client.configureBlocking(false);
+            client.register(selector, OP_READ);
+            LOGGER.info("A new client registered with");
+        } catch (Exception e) {
+            LOGGER.error("Can't register new client", e);
+        }
     }
+
+    private void echo(SelectionKey key) throws IOException {
+        LOGGER.info("Echo invoked");
+        SocketChannel client = (SocketChannel) key.channel();
+
+        Charset cset = Charset.forName("UTF-8");
+        if (client.read(buffer) < 0) {
+            return;
+        }
+
+        buffer.flip();
+        cset.decode(buffer);
+
+        buffer.flip();
+        client.write(buffer);
+
+        client.close();
+    }
+
+
 }

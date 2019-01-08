@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 public class ServerRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerRunner.class);
 
-    private static final int PORT = 10521;
+    private static final int PORT = 8999;
     private static final String HOST = "localhost";
 
     public static void main(String[] args) {
