@@ -1,8 +1,13 @@
 package org.artb.chat.server.core;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.artb.chat.common.message.Message;
+import org.artb.chat.common.message.SerializationUtils;
+import org.artb.chat.server.core.connection.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -33,9 +38,12 @@ public class ChatServer {
 
     private Map<UUID, SocketChannel> connections = new ConcurrentHashMap<>();
 
-    private LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
 
     private volatile boolean running = false;
+
+    private final ByteBuffer welcomeBuffer =
+            ByteBuffer.wrap("Welcome! Please, enter your name.\n".getBytes());
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -46,7 +54,7 @@ public class ChatServer {
         selector = Selector.open();
         serverSocket = ServerSocketChannel.open();
 
-        serverSocket.socket().setReuseAddress(true);
+//        serverSocket.socket().setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(host, port));
         serverSocket.configureBlocking(false);
         serverSocket.register(selector, OP_ACCEPT);
@@ -58,11 +66,16 @@ public class ChatServer {
             LOGGER.info("Connection processor started");
             while (running) {
                 try {
-                    String message = messages.take();
+                    Message message = messages.take();
                     LOGGER.info("Message to send: {}", message);
-                    broadcast(message);
-                } catch (InterruptedException e) {
-                    LOGGER.error("", e);
+                    String msgJson = SerializationUtils.serialize(message);
+                    if (message.getType() == Message.Type.SERVER_TEXT) {
+                        sendOne(message.getClient(), msgJson);
+                    } else {
+                        sendBroadcast(msgJson);
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Cannot send message", e);
                 }
             }
         });
@@ -85,7 +98,7 @@ public class ChatServer {
                     }
 
                     if (key.isAcceptable()) {
-                        register(selector);
+                        register(key);
                     } else if (key.isReadable()) {
                         read(key);
                     }
@@ -95,30 +108,35 @@ public class ChatServer {
     }
 
     public void stop() {
+        running = false;
+        connections.forEach((id, connection) -> closeConnection(connection));
         try {
             serverSocket.close();
-            running = false;
         } catch (IOException e) {
             LOGGER.error("Cannot close server socket: ", e.getMessage());
         }
     }
 
-    private void register(Selector selector) {
+    private void register(SelectionKey key) {
         try {
-            SocketChannel client = serverSocket.accept();
+            SocketChannel client = ((ServerSocketChannel) key.channel()).accept();
             client.configureBlocking(false);
-            client.register(selector, OP_READ);
-
-            String remoteAddress = Objects.toString(client.getRemoteAddress());
 
             UUID clientId = UUID.randomUUID();
+            client.register(selector, OP_READ, new Session(clientId));
+
             connections.putIfAbsent(clientId, client);
 
-            LOGGER.info("New client from {} registered with it ", remoteAddress, clientId);
+            String remoteAddress = Objects.toString(client.getRemoteAddress());
+            LOGGER.info("New client from {} registered with id {}", remoteAddress, clientId);
+
+            client.write(welcomeBuffer);
+            welcomeBuffer.rewind();
         } catch (IOException e) {
             LOGGER.error("Can't register new client", e);
         }
     }
+
 
     private void read(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
@@ -126,37 +144,57 @@ public class ChatServer {
         try {
             client.read(buffer);
             if (client.read(buffer) < 0) {
-                // TODO disconnect
+                closeConnection(client);
             }
         } catch (IOException e) {
-            // TODO disconnect
+            closeConnection(client);
             return;
         }
 
-        String message = new String(
-                extractDataFromBuffer(buffer),
-                StandardCharsets.UTF_8);
+        String messageJson = (new String(extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
+        Session session = (Session) key.attachment();
 
-        messages.add(message);
+        try {
+            Message msg = SerializationUtils.deserialize(messageJson);
+            LOGGER.info("{}", msg);
+            messages.add(msg);
+        } catch (IOException e) {
+            LOGGER.warn("Incorrect message received: {}", messageJson, e);
+            messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
+        }
     }
 
-    private void broadcast(String message) {
-        connections.forEach((id, client) -> {
-            try {
+    private void sendBroadcast(String message) {
+        connections.forEach((id, client) -> sendOne(id, message));
+    }
+
+    private void sendOne(UUID clientId, String message) {
+        try {
+            SocketChannel client = connections.get(clientId);
+            if (client == null) {
+                LOGGER.warn("Unknown connection with id: {}", clientId);
+            } else {
                 ByteBuffer buf = ByteBuffer.wrap(message.getBytes());
                 client.write(buf);
-                buffer.clear();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        });
+        } catch (IOException e) {
+            LOGGER.warn("Cannot send message to {}", clientId);
+        }
     }
 
     private byte[] extractDataFromBuffer(ByteBuffer buffer) {
         buffer.flip();
-        byte[] ret = new byte[buffer.limit()];
-        buffer.get(ret);
+        byte[] bytes = new byte[buffer.limit()];
+        buffer.get(bytes);
         buffer.clear();
-        return ret;
+        return bytes;
+    }
+
+    private void closeConnection(SocketChannel channel) {
+        try {
+            channel.close();
+        } catch (IOException e) {
+            LOGGER.error("Error when closing connection", e);
+        }
     }
 }
