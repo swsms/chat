@@ -109,7 +109,7 @@ public class ChatServer {
     }
 
     private void closeSockets() throws IOException {
-        connections.forEach((id, connection) -> closeConnection(connection));
+        connections.forEach((id, connection) -> closeConnection(connection.keyFor(selector)));
         serverSocket.close();
     }
 
@@ -166,10 +166,10 @@ public class ChatServer {
         try {
             client.read(buffer);
             if (client.read(buffer) < 0) {
-                closeConnection(client);
+                closeConnection(key);
             }
         } catch (IOException e) {
-            closeConnection(client);
+            closeConnection(key);
             return;
         }
 
@@ -220,9 +220,13 @@ public class ChatServer {
         }
     }
 
-    private void closeConnection(SocketChannel channel) {
+    private void closeConnection(SelectionKey key) {
+        Session session = (Session) key.attachment();
+        connections.remove(session.getClientId());
         try {
-            channel.close();
+            SocketChannel socket = (SocketChannel) key.channel();
+            socket.close();
+            key.cancel();
         } catch (IOException e) {
             LOGGER.error("Error when closing connection", e);
         }
