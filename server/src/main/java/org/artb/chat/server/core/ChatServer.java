@@ -49,6 +49,30 @@ public class ChatServer {
         this.port = port;
     }
 
+    public void start() {
+        try {
+            running = true;
+
+            configure();
+            startAsyncTaskProcessing();
+
+            while (running) {
+                processKeys();
+            }
+
+            LOGGER.info("Server started on {}:{}", host, port);
+        } catch (IOException e) {
+            LOGGER.error("Cannot start server on {}:{}", host, port, e);
+        }
+
+        try {
+            releaseSocket();
+            LOGGER.info("Server loop has been successfully stopped");
+        } catch (IOException e) {
+            LOGGER.error("", e);
+        }
+    }
+
     private void configure() throws IOException {
         selector = Selector.open();
         serverSocket = ServerSocketChannel.open();
@@ -112,30 +136,6 @@ public class ChatServer {
         connectionProcessor.start();
     }
 
-    public void start() {
-        try {
-            running = true;
-
-            configure();
-            startAsyncTaskProcessing();
-
-            while (running) {
-                processKeys();
-            }
-
-            LOGGER.info("Server started on {}:{}", host, port);
-        } catch (IOException e) {
-            LOGGER.error("Cannot start server on {}:{}", host, port, e);
-        }
-
-        try {
-            releaseSocket();
-            LOGGER.info("Server loop has been successfully stopped");
-        } catch (IOException e) {
-            LOGGER.error("Cannot start server on {}:{}", host, port, e);
-        }
-    }
-
     public void stop() {
         running = false;
     }
@@ -173,7 +173,7 @@ public class ChatServer {
             return;
         }
 
-        String messageJson = (new String(extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
+        String messageJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
         Session session = (Session) key.attachment();
 
         try {
@@ -217,14 +217,6 @@ public class ChatServer {
         sendingTasks.add(SendingTask.newPersonalTask(
                 Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE),
                 clientId));
-    }
-
-    private byte[] extractDataFromBuffer(ByteBuffer buffer) {
-        buffer.flip();
-        byte[] bytes = new byte[buffer.limit()];
-        buffer.get(bytes);
-        buffer.clear();
-        return bytes;
     }
 
     private void closeConnection(SocketChannel channel) {

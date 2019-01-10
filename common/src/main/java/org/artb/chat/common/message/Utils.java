@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 public final class Utils {
@@ -32,5 +33,13 @@ public final class Utils {
 
     public static boolean nonBlank(String str) {
         return !isBlank(str);
+    }
+
+    public static byte[] extractDataFromBuffer(ByteBuffer buffer) {
+        buffer.flip();
+        byte[] bytes = new byte[buffer.limit()];
+        buffer.get(bytes);
+        buffer.clear();
+        return bytes;
     }
 }
