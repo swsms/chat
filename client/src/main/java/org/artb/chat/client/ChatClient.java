@@ -91,7 +91,7 @@ public class ChatClient {
         socket.connect(new InetSocketAddress(serverHost, serverPort));
         socket.register(selector, OP_CONNECT);
 
-        connection = new TcpNioConnection(selector, socket, StandardCharsets.UTF_8);
+        connection = new TcpNioConnection(selector, socket);
     }
 
 

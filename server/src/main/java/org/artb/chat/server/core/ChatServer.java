@@ -1,5 +1,7 @@
 package org.artb.chat.server.core;
 
+import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.connection.Session;
@@ -13,6 +15,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,14 +32,13 @@ public class ChatServer {
     private final String host;
     private final int port;
 
-    private Selector selector;
-    private ServerSocketChannel serverSocket;
-    private ByteBuffer buffer = ByteBuffer.allocate(1024);
+    private Map<UUID, Connection> connections = new ConcurrentHashMap<>();
+    private volatile boolean running = false;
 
-    private Map<UUID, SocketChannel> connections = new ConcurrentHashMap<>();
     private BlockingQueue<SendingTask> sendingTasks = new LinkedBlockingQueue<>();
 
-    private volatile boolean running = false;
+    private Selector selector;
+    private ServerSocketChannel serverSocket;
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -66,11 +68,7 @@ public class ChatServer {
             running = false;
         }
 
-        try {
-            closeSockets();
-        } catch (IOException e) {
-            LOGGER.error("", e);
-        }
+        stop();
 
         LOGGER.info("The server has been stopped");
     }
@@ -108,11 +106,6 @@ public class ChatServer {
         }
     }
 
-    private void closeSockets() throws IOException {
-        connections.forEach((id, connection) -> closeConnection(connection.keyFor(selector)));
-        serverSocket.close();
-    }
-
     private void startAsyncTaskProcessing() {
         Thread connectionProcessor = new Thread(() -> {
             while (running) {
@@ -137,46 +130,47 @@ public class ChatServer {
         connectionProcessor.start();
     }
 
-    public void stop() {
+    private void stop() {
         running = false;
+        try {
+            connections.keySet().forEach(this::closeConnection);
+            serverSocket.close();
+        } catch (IOException e) {
+            LOGGER.error("Cannot close socket", e);
+        }
     }
 
     private void register(SelectionKey key) {
         UUID clientId = UUID.randomUUID();
 
-        final SocketChannel client;
+        final SocketChannel clientSocket;
         try {
-            client = ((ServerSocketChannel) key.channel()).accept();
-            client.configureBlocking(false);
-            client.register(selector, OP_READ, new Session(clientId));
-            String remoteAddress = Objects.toString(client.getRemoteAddress());
+            clientSocket = ((ServerSocketChannel) key.channel()).accept();
+            clientSocket.configureBlocking(false);
+            clientSocket.register(selector, OP_READ, new Session(clientId));
+            String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
             LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
         } catch (IOException e) {
             LOGGER.error("Cannot register new client with id {}", clientId, e);
             return;
         }
 
-        connections.putIfAbsent(clientId, client);
+        Connection connection = new TcpNioConnection(selector, clientSocket);
+        connections.putIfAbsent(clientId, connection);
+
         enqueue(newPersonalTask(REQUEST_NAME_MSG, clientId));
     }
 
     private void read(SelectionKey key) {
-        SocketChannel client = (SocketChannel) key.channel();
-
-        try {
-            client.read(buffer);
-            if (client.read(buffer) < 0) {
-                closeConnection(key);
-            }
-        } catch (IOException e) {
-            closeConnection(key);
+        Session session = (Session) key.attachment();
+        Connection connection = connections.get(session.getClientId());
+        if (connection == null) {
+            LOGGER.error("Unknown connection with id: {}", session.getClientId());
             return;
         }
 
-        Session session = (Session) key.attachment();
-
         try {
-            Message msg = Utils.readMessage(buffer);
+            Message msg = Utils.deserialize(connection.takeMessage());
             LOGGER.info("{}", msg);
             if (session.isAuth()) {
                 msg.setSender(session.getName()); // server knows the actual name of the client
@@ -208,27 +202,25 @@ public class ChatServer {
 
     private void sendOne(UUID clientId, String message) {
         try {
-            SocketChannel client = connections.get(clientId);
-            if (client == null) {
+            Connection connection = connections.get(clientId);
+            if (connection == null) {
                 LOGGER.warn("Unknown connection with id: {}", clientId);
             } else {
-                ByteBuffer buf = ByteBuffer.wrap(message.getBytes());
-                client.write(buf);
+                connection.sendMessage(message);
             }
         } catch (IOException e) {
             LOGGER.error("Cannot send message to {}", clientId, e);
         }
     }
 
-    private void closeConnection(SelectionKey key) {
-        Session session = (Session) key.attachment();
-        connections.remove(session.getClientId());
-        try {
-            SocketChannel socket = (SocketChannel) key.channel();
-            socket.close();
-            key.cancel();
-        } catch (IOException e) {
-            LOGGER.error("Error when closing connection", e);
+    private void closeConnection(UUID id) {
+        Connection connection = connections.remove(id);
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (IOException e) {
+                LOGGER.error("Error when closing connection", e);
+            }
         }
     }
 }

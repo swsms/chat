@@ -8,6 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -19,12 +20,11 @@ public class TcpNioConnection implements Connection {
     private final SelectionKey key;
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
-    private final Charset charset;
+    private final Charset charset = StandardCharsets.UTF_8;
 
-    public TcpNioConnection(Selector selector, SocketChannel socket, Charset charset) {
+    public TcpNioConnection(Selector selector, SocketChannel socket) {
         this.selector = selector;
         this.socket = socket;
-        this.charset = charset;
         this.key = socket.keyFor(selector);
     }
 
