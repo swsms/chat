@@ -8,19 +8,31 @@ import java.io.IOException;
 
 import static org.testng.Assert.*;
 
-public class SerializationUtilsTest {
+public class UtilsTest {
 
     @Test
     public void testSerialize() throws JsonProcessingException {
         Message msg = new Message();
         msg.setContent("Hello");
-        SerializationUtils.serialize(msg);
+        Utils.serialize(msg);
     }
 
     @Test
     public void testDeserialization() throws IOException {
         String json = "{\"content\":\"Hello\"}";
-        Message msg = SerializationUtils.deserialize(json);
+        Message msg = Utils.deserialize(json);
         assertEquals(msg.getContent(), "Hello");
+    }
+
+    @Test
+    public void testIsBlank() {
+        String emptyString = "";
+        assertTrue(Utils.isBlank(emptyString));
+
+        String nullString = null;
+        assertTrue(Utils.isBlank(nullString));
+
+        String stringWithSpaces = " \n\r";
+        assertTrue(Utils.isBlank(stringWithSpaces));
     }
 }

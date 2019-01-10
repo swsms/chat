@@ -5,8 +5,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.util.Objects;
 
-public final class SerializationUtils {
+public final class Utils {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -15,7 +16,7 @@ public final class SerializationUtils {
         objectMapper.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
     }
 
-    private SerializationUtils() { }
+    private Utils() { }
 
     public static String serialize(Message msg) throws JsonProcessingException {
         return objectMapper.writeValueAsString(msg);
@@ -23,5 +24,13 @@ public final class SerializationUtils {
 
     public static Message deserialize(String json) throws IOException {
         return objectMapper.readValue(json, Message.class);
+    }
+
+    public static boolean isBlank(String str) {
+        return Objects.isNull(str) || str.trim().length() == 0;
+    }
+
+    public static boolean nonBlank(String str) {
+        return !isBlank(str);
     }
 }

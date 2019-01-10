@@ -2,7 +2,8 @@ package org.artb.chat.server.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.SerializationUtils;
+import org.artb.chat.common.message.Utils;
+import org.artb.chat.common.message.Utils;
 import org.artb.chat.server.core.connection.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -38,12 +40,9 @@ public class ChatServer {
 
     private Map<UUID, SocketChannel> connections = new ConcurrentHashMap<>();
 
-    private LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+    private BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
 
     private volatile boolean running = false;
-
-    private final ByteBuffer welcomeBuffer =
-            ByteBuffer.wrap("Welcome! Please, enter your name.\n".getBytes());
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -68,7 +67,7 @@ public class ChatServer {
                 try {
                     Message message = messages.take();
                     LOGGER.info("Message to send: {}", message);
-                    String msgJson = SerializationUtils.serialize(message);
+                    String msgJson = Utils.serialize(message);
                     if (message.getType() == Message.Type.SERVER_TEXT) {
                         sendOne(message.getClient(), msgJson);
                     } else {
@@ -130,10 +129,9 @@ public class ChatServer {
             String remoteAddress = Objects.toString(client.getRemoteAddress());
             LOGGER.info("New client from {} registered with id {}", remoteAddress, clientId);
 
-            client.write(welcomeBuffer);
-            welcomeBuffer.rewind();
+            messages.add(Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE, clientId));
         } catch (IOException e) {
-            LOGGER.error("Can't register new client", e);
+            LOGGER.error("Cannot register new client", e);
         }
     }
 
@@ -155,11 +153,20 @@ public class ChatServer {
         Session session = (Session) key.attachment();
 
         try {
-            Message msg = SerializationUtils.deserialize(messageJson);
+            Message msg = Utils.deserialize(messageJson);
             LOGGER.info("{}", msg);
-            messages.add(msg);
+            if (session.isAuth()) {
+                messages.add(msg);
+            } else {
+                String userName = msg.getContent();
+                if (Utils.isBlank(userName)) {
+                    messages.add(Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE, session.getClientId()));
+                } else {
+                    session.setName(userName);
+                }
+            }
         } catch (IOException e) {
-            LOGGER.warn("Incorrect message received: {}", messageJson, e);
+            LOGGER.error("Incorrect message received: {}", messageJson, e);
             messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
         }
     }
@@ -178,7 +185,7 @@ public class ChatServer {
                 client.write(buf);
             }
         } catch (IOException e) {
-            LOGGER.warn("Cannot send message to {}", clientId);
+            LOGGER.error("Cannot send message to {}", clientId, e);
         }
     }
 
