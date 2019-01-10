@@ -1,4 +1,4 @@
-package org.artb.chat.common.message;
+package org.artb.chat.common;
 
 public final class Constants {
 

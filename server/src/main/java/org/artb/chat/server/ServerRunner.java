@@ -1,21 +1,25 @@
 package org.artb.chat.server;
 
+import org.artb.chat.common.settings.Settings;
+import org.artb.chat.common.settings.SettingsParseException;
 import org.artb.chat.server.core.ChatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+
 public class ServerRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerRunner.class);
 
-    private static final int PORT = 8999;
-    private static final String HOST = "localhost";
-
     public static void main(String[] args) {
-        ChatServer server = new ChatServer(HOST, PORT);
         try {
+            Settings settings = Settings.fromArgsArray(args);
+            ChatServer server = new ChatServer(settings.getHost(), settings.getPort());
             server.start();
+        } catch (SettingsParseException e) {
+            LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
         } catch (Exception e) {
-            LOGGER.error("Server error", e);
+            LOGGER.error("Fatal server error", e);
         }
     }
 }

@@ -1,7 +1,7 @@
 package org.artb.chat.common.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.testng.Assert;
+import org.artb.chat.common.Utils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

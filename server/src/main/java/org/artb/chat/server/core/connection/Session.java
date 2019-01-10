@@ -1,6 +1,6 @@
 package org.artb.chat.server.core.connection;
 
-import org.artb.chat.common.message.Utils;
+import org.artb.chat.common.Utils;
 
 import java.util.UUID;
 

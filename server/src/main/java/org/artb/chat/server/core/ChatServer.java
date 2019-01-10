@@ -1,14 +1,11 @@
 package org.artb.chat.server.core;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.Utils;
-import org.artb.chat.common.message.Utils;
+import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.connection.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -16,12 +13,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
@@ -37,11 +31,9 @@ public class ChatServer {
 
     private Selector selector;
     private ServerSocketChannel serverSocket;
-
     private ByteBuffer buffer = ByteBuffer.allocate(1024);
 
     private Map<UUID, SocketChannel> connections = new ConcurrentHashMap<>();
-
     private BlockingQueue<SendingTask> sendingTasks = new LinkedBlockingQueue<>();
 
     private volatile boolean running = false;
@@ -52,30 +44,35 @@ public class ChatServer {
     }
 
     public void start() {
+        running = true;
+
         try {
-            running = true;
-
             configure();
-
             LOGGER.info("Server started on {}:{}", host, port);
-
-            startAsyncTaskProcessing();
-
-            while (running) {
-                processKeys();
-            }
-
         } catch (IOException e) {
             LOGGER.error("Cannot start server on {}:{}", host, port, e);
             running = false;
         }
 
+        startAsyncTaskProcessing();
+
         try {
-            releaseSocket();
-            LOGGER.info("Server loop has been successfully stopped");
+            LOGGER.info("Starting process keys loop");
+            while (running) {
+                processKeys();
+            }
+        } catch (IOException e) {
+            LOGGER.error("An error occurs while keys processing", e);
+            running = false;
+        }
+
+        try {
+            closeSockets();
         } catch (IOException e) {
             LOGGER.error("", e);
         }
+
+        LOGGER.info("The server has been stopped");
     }
 
     private void configure() throws IOException {
@@ -111,7 +108,7 @@ public class ChatServer {
         }
     }
 
-    private void releaseSocket() throws IOException {
+    private void closeSockets() throws IOException {
         connections.forEach((id, connection) -> closeConnection(connection));
         serverSocket.close();
     }

@@ -1,8 +1,9 @@
-package org.artb.chat.common.message;
+package org.artb.chat.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.artb.chat.common.message.Message;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

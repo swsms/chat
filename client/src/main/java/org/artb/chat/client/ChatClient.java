@@ -2,9 +2,9 @@ package org.artb.chat.client;
 
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
-import org.artb.chat.common.message.Constants;
+import org.artb.chat.common.Constants;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.Utils;
+import org.artb.chat.common.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,16 +13,13 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.*;
 
