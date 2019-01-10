@@ -54,15 +54,18 @@ public class ChatServer {
             running = true;
 
             configure();
+
+            LOGGER.info("Server started on {}:{}", host, port);
+
             startAsyncTaskProcessing();
 
             while (running) {
                 processKeys();
             }
 
-            LOGGER.info("Server started on {}:{}", host, port);
         } catch (IOException e) {
             LOGGER.error("Cannot start server on {}:{}", host, port, e);
+            running = false;
         }
 
         try {
@@ -113,7 +116,6 @@ public class ChatServer {
 
     private void startAsyncTaskProcessing() {
         Thread connectionProcessor = new Thread(() -> {
-            LOGGER.info("Connection processor started");
             while (running) {
                 try {
                     SendingTask task = sendingTasks.take();
@@ -187,6 +189,7 @@ public class ChatServer {
                     requestUserName(session.getClientId());
                 } else {
                     session.setName(userName);
+                    LOGGER.info("");
                 }
             }
         } catch (IOException e) {

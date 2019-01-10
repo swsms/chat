@@ -22,6 +22,13 @@ public class Message {
         return new Message(content, Type.USER_TEXT, sender);
     }
 
+    /**
+     * It is used on a client side, the server knows actual client's name
+     */
+    public static Message newUserMessage(String content) {
+        return new Message(content, Type.USER_TEXT, "client");
+    }
+
     public enum Type {
         SERVER_TEXT, USER_TEXT
     }

@@ -1,5 +1,7 @@
 package org.artb.chat.client;
 
+import org.artb.chat.common.message.Constants;
+import org.artb.chat.common.message.Message;
 import org.artb.chat.common.message.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +15,12 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.Queue;
+import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.*;
 
@@ -26,9 +33,11 @@ public class ChatClient {
     private Selector selector;
 
     private SocketChannel socket;
-    private ByteBuffer buffer = ByteBuffer.allocate(1024);
+    private ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
 
     private volatile boolean running = true;
+
+    private Queue<Message> messages = new ConcurrentLinkedQueue<>();
 
     public ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
@@ -39,6 +48,8 @@ public class ChatClient {
         running = true;
         try {
             configure();
+
+            startAsyncMessageReading();
 
             while (running) {
                 processKeys();
@@ -71,6 +82,26 @@ public class ChatClient {
         socket.register(selector, OP_CONNECT);
     }
 
+    private void startAsyncMessageReading() {
+        Scanner scanner = new Scanner(System.in);
+        Thread messageReader = new Thread(() -> {
+            while (running) {
+               String messageText = scanner.nextLine();
+               Message msg = Message.newUserMessage(messageText);
+               messages.add(msg);
+               switchMode(OP_WRITE);
+            }
+        });
+        messageReader.start();
+    }
+
+    private void switchMode(int targetMode) {
+        SelectionKey key = socket.keyFor(selector);
+        key.interestOps(targetMode);
+        selector.wakeup();
+    }
+
+
     private void processKeys() throws IOException {
         int numKeys = selector.select();
 
@@ -89,7 +120,7 @@ public class ChatClient {
                 if (key.isReadable()) {
                     read(key);
                 } else if (key.isWritable()) {
-                    write(key);
+                    write();
                 } else if (key.isConnectable()) {
                     connect(key);
                 }
@@ -105,15 +136,29 @@ public class ChatClient {
             if (client.read(buffer) < 0) {
                 stop();
             }
+
+            String msgJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
+            Message msg = Utils.deserialize(msgJson);
+
+            System.out.printf("%s: %s\n", msg.getSender(), msg.getContent());
         } catch (IOException e) {
+            LOGGER.error("Cannot read message", e);
             stop();
-            return;
         }
+    }
 
-        String messageJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
-        LOGGER.info(messageJson);
-
-        key.interestOps(OP_WRITE);
+    private void write() {
+        while (!messages.isEmpty()) {
+            Message msg = messages.poll();
+            try {
+                String msgJson = Utils.serialize(msg);
+                ByteBuffer buf = ByteBuffer.wrap(msgJson.getBytes(StandardCharsets.UTF_8));
+                socket.write(buf);
+            } catch (IOException e) {
+                LOGGER.error("Cannot send message: {}", msg, e);
+            }
+        }
+        switchMode(OP_READ);
     }
 
     private void connect(SelectionKey key) {
@@ -129,10 +174,5 @@ public class ChatClient {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
             running = false;
         }
-    }
-
-    private void write(SelectionKey key) {
-        LOGGER.info("Writable");
-        key.interestOps(OP_READ);
     }
 }
