@@ -2,7 +2,6 @@ package org.artb.chat.server;
 
 import org.artb.chat.common.settings.Settings;
 import org.artb.chat.common.settings.SettingsParseException;
-import org.artb.chat.server.core.ChatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,21 +1,21 @@
-package org.artb.chat.server.core;
+package org.artb.chat.server;
 
 import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
+import org.artb.chat.server.core.task.AsyncTaskProcessor;
+import org.artb.chat.server.core.task.SendingTask;
 import org.artb.chat.server.core.connection.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,8 +23,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
-import static org.artb.chat.server.core.Constants.*;
-import static org.artb.chat.server.core.SendingTask.*;
+import static org.artb.chat.server.core.MsgConstants.*;
+import static org.artb.chat.server.core.task.SendingTask.*;
 
 public class ChatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
@@ -35,7 +35,8 @@ public class ChatServer {
     private Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private volatile boolean running = false;
 
-    private BlockingQueue<SendingTask> sendingTasks = new LinkedBlockingQueue<>();
+    private final BlockingQueue<SendingTask> tasks = new LinkedBlockingQueue<>();
+    private final AsyncTaskProcessor taskProcessor = new AsyncTaskProcessor(this, tasks);
 
     private Selector selector;
     private ServerSocketChannel serverSocket;
@@ -56,7 +57,7 @@ public class ChatServer {
             running = false;
         }
 
-        startAsyncTaskProcessing();
+        taskProcessor.start();
 
         try {
             LOGGER.info("Starting process keys loop");
@@ -106,32 +107,9 @@ public class ChatServer {
         }
     }
 
-    private void startAsyncTaskProcessing() {
-        Thread connectionProcessor = new Thread(() -> {
-            while (running) {
-                try {
-                    SendingTask task = sendingTasks.take();
-                    LOGGER.info("Message to send: {}", task.getMessage());
-
-                    String msgJson = Utils.serialize(task.getMessage());
-                    switch (task.getMode()) {
-                        case PERSONAL:
-                            sendOne(task.getClientId(), msgJson);
-                            break;
-                        case BROADCAST:
-                            sendBroadcast(msgJson);
-                            break;
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Cannot send message", e);
-                }
-            }
-        });
-        connectionProcessor.start();
-    }
-
     private void stop() {
         running = false;
+        taskProcessor.stop();
         try {
             connections.keySet().forEach(this::closeConnection);
             serverSocket.close();
@@ -193,14 +171,14 @@ public class ChatServer {
     }
 
     private void enqueue(SendingTask task) {
-        sendingTasks.add(task);
+        tasks.add(task);
     }
 
-    private void sendBroadcast(String message) {
+    public void sendBroadcast(String message) {
         connections.forEach((id, client) -> sendOne(id, message));
     }
 
-    private void sendOne(UUID clientId, String message) {
+    public void sendOne(UUID clientId, String message) {
         try {
             Connection connection = connections.get(clientId);
             if (connection == null) {

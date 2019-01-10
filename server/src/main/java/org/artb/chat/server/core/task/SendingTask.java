@@ -1,7 +1,6 @@
-package org.artb.chat.server.core;
+package org.artb.chat.server.core.task;
 
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.connection.Session;
 
 import java.util.UUID;
 

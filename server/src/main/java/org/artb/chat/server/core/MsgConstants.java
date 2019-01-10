@@ -4,7 +4,7 @@ import org.artb.chat.common.message.Message;
 
 import static org.artb.chat.common.message.Message.*;
 
-public final class Constants {
+public final class MsgConstants {
 
     public static final String REQUEST_NAME_MSG_TEXT = "Please, enter your name to start chatting.";
     public static final String NAME_ACCEPTED_MSG_TEXT = "The name was accepted.";
@@ -18,5 +18,5 @@ public final class Constants {
     public static final Message NAME_DECLINED_MSG = newServerMessage(NAME_DECLINED_MSG_TEXT);
     public static final Message INCORRECT_FORMAT_MSG = newServerMessage(INCORRECT_FORMAT_MSG_TEXT);
 
-    private Constants() { }
+    private MsgConstants() { }
 }

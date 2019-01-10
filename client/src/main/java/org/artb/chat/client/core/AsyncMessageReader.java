@@ -15,7 +15,6 @@ public class AsyncMessageReader {
     private final Scanner scanner = new Scanner(System.in);
     private final Consumer<Message> consumer;
     private final Thread thread;
-
     private volatile boolean running = false;
 
     public AsyncMessageReader(Consumer<Message> consumer) {
