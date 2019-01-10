@@ -1,5 +1,6 @@
 package org.artb.chat.client;
 
+import org.artb.chat.client.core.AsyncMessageReader;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Constants;
@@ -30,7 +31,6 @@ public class ChatClient {
     private final int serverPort;
 
     private Selector selector;
-
     private SocketChannel socket;
     private ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
 
@@ -39,6 +39,10 @@ public class ChatClient {
     private Queue<Message> messages = new ConcurrentLinkedQueue<>();
 
     private final UIDisplay display = new UIConsoleDisplay();
+    private final AsyncMessageReader asyncMessageReader = new AsyncMessageReader((msg) -> {
+        messages.add(msg);
+        switchMode(OP_WRITE);
+    });
 
     public ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
@@ -50,7 +54,7 @@ public class ChatClient {
         try {
             configure();
 
-            startAsyncMessageReading();
+            asyncMessageReader.start();
 
             while (running) {
                 processKeys();
@@ -66,6 +70,7 @@ public class ChatClient {
     private void stop() {
         try {
             running = false;
+            asyncMessageReader.stop();
             socket.close();
             LOGGER.info("Client successfully stopped");
         } catch (IOException e) {
@@ -81,19 +86,6 @@ public class ChatClient {
 
         socket.connect(new InetSocketAddress(serverHost, serverPort));
         socket.register(selector, OP_CONNECT);
-    }
-
-    private void startAsyncMessageReading() {
-        Scanner scanner = new Scanner(System.in);
-        Thread messageReader = new Thread(() -> {
-            while (running) {
-               String messageText = scanner.nextLine();
-               Message msg = Message.newUserMessage(messageText);
-               messages.add(msg);
-               switchMode(OP_WRITE);
-            }
-        });
-        messageReader.start();
     }
 
     private void switchMode(int targetMode) {
