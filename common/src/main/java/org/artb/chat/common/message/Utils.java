@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class Utils {
-
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static {
@@ -35,11 +35,17 @@ public final class Utils {
         return !isBlank(str);
     }
 
-    public static byte[] extractDataFromBuffer(ByteBuffer buffer) {
+    public static byte[] readBytes(ByteBuffer buffer) {
         buffer.flip();
         byte[] bytes = new byte[buffer.limit()];
         buffer.get(bytes);
         buffer.clear();
         return bytes;
+    }
+
+    public static Message readMessage(ByteBuffer buffer) throws IOException {
+        byte[] bytesFromBuffer = readBytes(buffer);
+        String msgAsString = new String(bytesFromBuffer, StandardCharsets.UTF_8);
+        return Utils.deserialize(msgAsString.trim());
     }
 }

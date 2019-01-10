@@ -141,8 +141,7 @@ public class ChatClient {
                 stop();
             }
 
-            String msgJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
-            Message msg = Utils.deserialize(msgJson);
+            Message msg = Utils.readMessage(buffer);
 
             display.print(msg);
         } catch (IOException e) {

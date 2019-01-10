@@ -176,11 +176,10 @@ public class ChatServer {
             return;
         }
 
-        String messageJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
         Session session = (Session) key.attachment();
 
         try {
-            Message msg = Utils.deserialize(messageJson);
+            Message msg = Utils.readMessage(buffer);
             LOGGER.info("{}", msg);
             if (session.isAuth()) {
                 msg.setSender(session.getName()); // server knows the actual name of the client
@@ -189,14 +188,16 @@ public class ChatServer {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
                     enqueue(newPersonalTask(REQUEST_NAME_MSG, session.getClientId()));
+                } else if ("server".equalsIgnoreCase(userName)) {
+                    enqueue(newPersonalTask(NAME_DECLINED_MSG, session.getClientId()));
                 } else {
                     session.setName(userName);
                     enqueue(newPersonalTask(NAME_ACCEPTED_MSG, session.getClientId()));
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Incorrect message received: {}", messageJson, e);
-//            messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
+            LOGGER.error("Incorrect message received", e);
+            enqueue(newPersonalTask(INCORRECT_FORMAT_MSG, session.getClientId()));
         }
     }
 
