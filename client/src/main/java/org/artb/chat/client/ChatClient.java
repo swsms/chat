@@ -4,6 +4,8 @@ import org.artb.chat.client.core.AsyncMessageReader;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Constants;
+import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.slf4j.Logger;
@@ -15,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Queue;
@@ -31,8 +34,7 @@ public class ChatClient {
     private final int serverPort;
 
     private Selector selector;
-    private SocketChannel socket;
-    private ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
+    private Connection connection;
 
     private volatile boolean running = true;
 
@@ -41,7 +43,7 @@ public class ChatClient {
     private final UIDisplay display = new UIConsoleDisplay();
     private final AsyncMessageReader asyncMessageReader = new AsyncMessageReader((msg) -> {
         messages.add(msg);
-        switchMode(OP_WRITE);
+        connection.notification();
     });
 
     public ChatClient(String serverHost, int serverPort) {
@@ -71,7 +73,9 @@ public class ChatClient {
         try {
             running = false;
             asyncMessageReader.stop();
-            socket.close();
+            if (connection != null) {
+                connection.close();
+            }
             LOGGER.info("Client successfully stopped");
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
@@ -81,17 +85,13 @@ public class ChatClient {
     private void configure() throws IOException {
         selector = Selector.open();
 
-        socket = SocketChannel.open();
+        SocketChannel socket = SocketChannel.open();
         socket.configureBlocking(false);
 
         socket.connect(new InetSocketAddress(serverHost, serverPort));
         socket.register(selector, OP_CONNECT);
-    }
 
-    private void switchMode(int targetMode) {
-        SelectionKey key = socket.keyFor(selector);
-        key.interestOps(targetMode);
-        selector.wakeup();
+        connection = new TcpNioConnection(selector, socket, StandardCharsets.UTF_8);
     }
 
 
@@ -111,27 +111,19 @@ public class ChatClient {
                 }
 
                 if (key.isReadable()) {
-                    read(key);
+                    read();
                 } else if (key.isWritable()) {
                     write();
                 } else if (key.isConnectable()) {
-                    connect(key);
+                    connect();
                 }
             }
         }
     }
 
-    private void read(SelectionKey key) {
-        SocketChannel client = (SocketChannel) key.channel();
-
+    private void read() {
         try {
-            client.read(buffer);
-            if (client.read(buffer) < 0) {
-                stop();
-            }
-
-            Message msg = Utils.readMessage(buffer);
-
+            Message msg = Utils.deserialize(connection.takeMessage());
             display.print(msg);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
@@ -143,21 +135,17 @@ public class ChatClient {
         while (!messages.isEmpty()) {
             Message msg = messages.poll();
             try {
-                String msgJson = Utils.serialize(msg);
-                ByteBuffer buf = ByteBuffer.wrap(msgJson.getBytes(StandardCharsets.UTF_8));
-                socket.write(buf);
+                connection.sendMessage(Utils.serialize(msg));
             } catch (IOException e) {
                 LOGGER.error("Cannot send message: {}", msg, e);
             }
         }
-        switchMode(OP_READ);
     }
 
-    private void connect(SelectionKey key) {
+    private void connect() {
         try {
-            if (socket.finishConnect()) {
+            if (connection.connect()) {
                 LOGGER.info("Established connection with {}:{}", serverHost, serverPort);
-                key.interestOps(OP_READ);
             } else {
                 LOGGER.info("Cannot connect to {}:{}", serverHost, serverPort);
                 running = false;
