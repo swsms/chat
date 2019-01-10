@@ -33,22 +33,22 @@ public class ChatClient {
     private final String serverHost;
     private final int serverPort;
 
-    private Selector selector;
     private Connection connection;
-
     private volatile boolean running = true;
 
-    private Queue<Message> messages = new ConcurrentLinkedQueue<>();
-
     private final UIDisplay display = new UIConsoleDisplay();
-    private final AsyncMessageReader asyncMessageReader = new AsyncMessageReader((msg) -> {
-        messages.add(msg);
-        connection.notification();
-    });
+    private final AsyncMessageReader asyncMessageReader;
+
+    private Queue<Message> messages = new ConcurrentLinkedQueue<>();
+    private Selector selector;
 
     public ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
+        this.asyncMessageReader = new AsyncMessageReader((msg) -> {
+            messages.add(msg);
+            connection.notification();
+        });
     }
 
     public void start() {
