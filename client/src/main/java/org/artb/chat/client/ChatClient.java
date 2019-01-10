@@ -1,5 +1,7 @@
 package org.artb.chat.client;
 
+import org.artb.chat.client.ui.UIConsoleDisplay;
+import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.message.Constants;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.message.Utils;
@@ -38,6 +40,8 @@ public class ChatClient {
     private volatile boolean running = true;
 
     private Queue<Message> messages = new ConcurrentLinkedQueue<>();
+
+    private final UIDisplay display = new UIConsoleDisplay();
 
     public ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
@@ -140,7 +144,7 @@ public class ChatClient {
             String msgJson = (new String(Utils.extractDataFromBuffer(buffer), StandardCharsets.UTF_8)).trim();
             Message msg = Utils.deserialize(msgJson);
 
-            System.out.printf("%s: %s\n", msg.getSender(), msg.getContent());
+            display.print(msg);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
             stop();

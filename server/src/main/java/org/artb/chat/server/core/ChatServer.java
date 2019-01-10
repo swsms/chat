@@ -26,6 +26,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
+import static org.artb.chat.server.core.Constants.*;
+import static org.artb.chat.server.core.SendingTask.*;
 
 public class ChatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
@@ -158,9 +160,8 @@ public class ChatServer {
         }
 
         connections.putIfAbsent(clientId, client);
-        requestUserName(clientId);
+        enqueue(newPersonalTask(REQUEST_NAME_MSG, clientId));
     }
-
 
     private void read(SelectionKey key) {
         SocketChannel client = (SocketChannel) key.channel();
@@ -182,20 +183,25 @@ public class ChatServer {
             Message msg = Utils.deserialize(messageJson);
             LOGGER.info("{}", msg);
             if (session.isAuth()) {
-                sendingTasks.add(SendingTask.newBroadcastTask(msg));
+                msg.setSender(session.getName()); // server knows the actual name of the client
+                enqueue(newBroadcastTask(msg));
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
-                    requestUserName(session.getClientId());
+                    enqueue(newPersonalTask(REQUEST_NAME_MSG, session.getClientId()));
                 } else {
                     session.setName(userName);
-                    LOGGER.info("");
+                    enqueue(newPersonalTask(NAME_ACCEPTED_MSG, session.getClientId()));
                 }
             }
         } catch (IOException e) {
             LOGGER.error("Incorrect message received: {}", messageJson, e);
 //            messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
         }
+    }
+
+    private void enqueue(SendingTask task) {
+        sendingTasks.add(task);
     }
 
     private void sendBroadcast(String message) {
@@ -214,12 +220,6 @@ public class ChatServer {
         } catch (IOException e) {
             LOGGER.error("Cannot send message to {}", clientId, e);
         }
-    }
-
-    private void requestUserName(UUID clientId) {
-        sendingTasks.add(SendingTask.newPersonalTask(
-                Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE),
-                clientId));
     }
 
     private void closeConnection(SocketChannel channel) {

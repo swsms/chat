@@ -1,8 +1,18 @@
 package org.artb.chat.server.core;
 
+import org.artb.chat.common.message.Message;
+
+import static org.artb.chat.common.message.Message.*;
+
 public final class Constants {
 
-    public static final String REQUEST_NAME_MESSAGE = "Please, enter your name to start chatting.";
+    public static final String REQUEST_NAME_MSG_TEXT = "Please, enter your name to start chatting.";
+    public static final String NAME_ACCEPTED_MSG_TEXT = "The name was accepted, you may chatting.";
+    public static final String NAME_DECLINED_MSG_TEXT = "The name was declined, try another one.";
+
+    public static final Message NAME_ACCEPTED_MSG = newServerMessage(NAME_ACCEPTED_MSG_TEXT);
+    public static final Message REQUEST_NAME_MSG = newServerMessage(REQUEST_NAME_MSG_TEXT);
+    public static final Message NAME_DECLINED_MSG = newServerMessage(NAME_DECLINED_MSG_TEXT);
 
     private Constants() { }
 }
