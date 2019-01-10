@@ -40,7 +40,7 @@ public class ChatServer {
 
     private Map<UUID, SocketChannel> connections = new ConcurrentHashMap<>();
 
-    private BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
+    private BlockingQueue<SendingTask> sendingTasks = new LinkedBlockingQueue<>();
 
     private volatile boolean running = false;
 
@@ -49,90 +49,114 @@ public class ChatServer {
         this.port = port;
     }
 
-    public void start() throws IOException {
+    private void configure() throws IOException {
         selector = Selector.open();
         serverSocket = ServerSocketChannel.open();
 
-//        serverSocket.socket().setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(host, port));
         serverSocket.configureBlocking(false);
         serverSocket.register(selector, OP_ACCEPT);
+    }
 
-        LOGGER.info("Server started on {}:{}", host, port);
-        running = true;
+    private void processKeys() throws IOException {
+        int numKeys = selector.select();
 
+        if (numKeys > 0) {
+            Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iter = selectedKeys.iterator();
+
+            while (iter.hasNext()) {
+                SelectionKey key = iter.next();
+                iter.remove();
+
+                if (!key.isValid()) {
+                    continue;
+                }
+
+                if (key.isAcceptable()) {
+                    register(key);
+                } else if (key.isReadable()) {
+                    read(key);
+                }
+            }
+        }
+    }
+
+    private void releaseSocket() throws IOException {
+        connections.forEach((id, connection) -> closeConnection(connection));
+        serverSocket.close();
+    }
+
+    private void startAsyncTaskProcessing() {
         Thread connectionProcessor = new Thread(() -> {
             LOGGER.info("Connection processor started");
             while (running) {
                 try {
-                    Message message = messages.take();
-                    LOGGER.info("Message to send: {}", message);
-                    String msgJson = Utils.serialize(message);
-                    if (message.getType() == Message.Type.SERVER_TEXT) {
-                        sendOne(message.getClient(), msgJson);
-                    } else {
-                        sendBroadcast(msgJson);
+                    SendingTask task = sendingTasks.take();
+                    LOGGER.info("Message to send: {}", task.getMessage());
+
+                    String msgJson = Utils.serialize(task.getMessage());
+                    switch (task.getMode()) {
+                        case PERSONAL:
+                            sendOne(task.getClientId(), msgJson);
+                            break;
+                        case BROADCAST:
+                            sendBroadcast(msgJson);
+                            break;
                     }
                 } catch (Exception e) {
                     LOGGER.error("Cannot send message", e);
                 }
             }
         });
-
         connectionProcessor.start();
+    }
 
-        while (running) {
-            int numKeys = selector.select();
+    public void start() {
+        try {
+            running = true;
 
-            if (numKeys > 0) {
-                Set<SelectionKey> selectedKeys = selector.selectedKeys();
-                Iterator<SelectionKey> iter = selectedKeys.iterator();
+            configure();
+            startAsyncTaskProcessing();
 
-                while (iter.hasNext()) {
-                    SelectionKey key = iter.next();
-                    iter.remove();
-
-                    if (!key.isValid()) {
-                        continue;
-                    }
-
-                    if (key.isAcceptable()) {
-                        register(key);
-                    } else if (key.isReadable()) {
-                        read(key);
-                    }
-                }
+            while (running) {
+                processKeys();
             }
+
+            LOGGER.info("Server started on {}:{}", host, port);
+        } catch (IOException e) {
+            LOGGER.error("Cannot start server on {}:{}", host, port, e);
+        }
+
+        try {
+            releaseSocket();
+            LOGGER.info("Server loop has been successfully stopped");
+        } catch (IOException e) {
+            LOGGER.error("Cannot start server on {}:{}", host, port, e);
         }
     }
 
     public void stop() {
         running = false;
-        connections.forEach((id, connection) -> closeConnection(connection));
-        try {
-            serverSocket.close();
-        } catch (IOException e) {
-            LOGGER.error("Cannot close server socket: ", e.getMessage());
-        }
     }
 
     private void register(SelectionKey key) {
+        UUID clientId = UUID.randomUUID();
+
+        final SocketChannel client;
         try {
-            SocketChannel client = ((ServerSocketChannel) key.channel()).accept();
+            client = ((ServerSocketChannel) key.channel()).accept();
             client.configureBlocking(false);
-
-            UUID clientId = UUID.randomUUID();
             client.register(selector, OP_READ, new Session(clientId));
-
-            connections.putIfAbsent(clientId, client);
-
             String remoteAddress = Objects.toString(client.getRemoteAddress());
-            LOGGER.info("New client from {} registered with id {}", remoteAddress, clientId);
-
-            messages.add(Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE, clientId));
+            LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
         } catch (IOException e) {
-            LOGGER.error("Cannot register new client", e);
+            LOGGER.error("Cannot register new client with id {}", clientId, e);
+            return;
         }
+
+        connections.putIfAbsent(clientId, client);
+        requestUserName(clientId);
     }
 
 
@@ -156,18 +180,18 @@ public class ChatServer {
             Message msg = Utils.deserialize(messageJson);
             LOGGER.info("{}", msg);
             if (session.isAuth()) {
-                messages.add(msg);
+                sendingTasks.add(SendingTask.newBroadcastTask(msg));
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
-                    messages.add(Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE, session.getClientId()));
+                    requestUserName(session.getClientId());
                 } else {
                     session.setName(userName);
                 }
             }
         } catch (IOException e) {
             LOGGER.error("Incorrect message received: {}", messageJson, e);
-            messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
+//            messages.add(Message.newServerMessage("Incorrect message", session.getClientId()));
         }
     }
 
@@ -187,6 +211,12 @@ public class ChatServer {
         } catch (IOException e) {
             LOGGER.error("Cannot send message to {}", clientId, e);
         }
+    }
+
+    private void requestUserName(UUID clientId) {
+        sendingTasks.add(SendingTask.newPersonalTask(
+                Message.newServerMessage(Constants.REQUEST_NAME_MESSAGE),
+                clientId));
     }
 
     private byte[] extractDataFromBuffer(ByteBuffer buffer) {
