@@ -4,6 +4,7 @@ import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
+import org.artb.chat.server.core.storage.UserInfoStorage;
 import org.artb.chat.server.core.task.AsyncTaskProcessor;
 import org.artb.chat.server.core.task.SendingTask;
 import org.artb.chat.server.core.connection.Session;
@@ -33,6 +34,7 @@ public class ChatServer {
     private final int port;
 
     private Map<UUID, Connection> connections = new ConcurrentHashMap<>();
+    private UserInfoStorage userInfoStorage = new UserInfoStorage();
     private volatile boolean running = false;
 
     private final BlockingQueue<SendingTask> tasks = new LinkedBlockingQueue<>();
