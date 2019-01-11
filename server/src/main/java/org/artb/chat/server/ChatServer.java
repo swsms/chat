@@ -4,10 +4,10 @@ import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
+import org.artb.chat.server.core.connection.ConnectionData;
 import org.artb.chat.server.core.storage.UserInfoStorage;
 import org.artb.chat.server.core.task.AsyncTaskProcessor;
 import org.artb.chat.server.core.task.SendingTask;
-import org.artb.chat.server.core.connection.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,7 +133,7 @@ public class ChatServer {
             connections.putIfAbsent(clientId, connection);
 
             clientSocket.configureBlocking(false);
-            clientSocket.register(selector, OP_READ, new Session(clientId, connection));
+            clientSocket.register(selector, OP_READ, new ConnectionData(clientId, connection));
 
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
             LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
@@ -145,35 +145,34 @@ public class ChatServer {
     }
 
     private void read(SelectionKey key) {
-        Session session = (Session) key.attachment();
-        Queue<String> queue = session.getPendingData();
+        ConnectionData connData = (ConnectionData) key.attachment();
 
-        Connection connection = connections.get(session.getClientId());
+        Connection connection = connections.get(connData.getClientId());
         if (connection == null) {
-            LOGGER.error("Unknown connection with id: {}", session.getClientId());
+            LOGGER.error("Unknown connection with id: {}", connData.getClientId());
             return;
         }
 
         try {
             Message msg = Utils.deserialize(connection.takeMessage());
             LOGGER.info("{}", msg);
-            if (session.isAuth()) {
-                msg.setSender(session.getName());
+            if (connData.isAuthenticated()) {
+                msg.setSender(connData.getName());
                 sendAll(msg);
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
-                    enqueue(newPersonalTask(REQUEST_NAME_MSG, session.getClientId()));
+                    enqueue(newPersonalTask(REQUEST_NAME_MSG, connData.getClientId()));
                 } else if ("server".equalsIgnoreCase(userName)) {
-                    enqueue(newPersonalTask(NAME_DECLINED_MSG, session.getClientId()));
+                    enqueue(newPersonalTask(NAME_DECLINED_MSG, connData.getClientId()));
                 } else {
-                    session.setName(userName);
-                    enqueue(newPersonalTask(NAME_ACCEPTED_MSG, session.getClientId()));
+                    connData.setName(userName);
+                    enqueue(newPersonalTask(NAME_ACCEPTED_MSG, connData.getClientId()));
                 }
             }
         } catch (IOException e) {
             LOGGER.error("Incorrect message received", e);
-            closeConnection(session.getClientId());
+            closeConnection(connData.getClientId());
         }
     }
 
@@ -183,10 +182,10 @@ public class ChatServer {
             selector.keys().stream()
                     .filter(SelectionKey::isValid)
                     .forEach((key) -> {
-                        Session session = (Session) key.attachment();
-                        if (session != null) {
-                            session.getPendingData().add(jsonMsg);
-                            session.getConnection().notification();
+                        ConnectionData connData = (ConnectionData) key.attachment();
+                        if (connData != null && connData.isAuthenticated()) {
+                            connData.addToBuffer(jsonMsg);
+                            connData.getConnection().notification();
                         }
                     });
         } catch (IOException e) {
@@ -195,23 +194,21 @@ public class ChatServer {
     }
 
     private void write(SelectionKey key) {
-        Session session = (Session) key.attachment();
-        Queue<String> queue = session.getPendingData();
-
-        Connection connection = connections.get(session.getClientId());
+        ConnectionData connData = (ConnectionData) key.attachment();
+        Connection connection = connData.getConnection();
         if (connection == null) {
-            LOGGER.error("Unknown connection with id: {}", session.getClientId());
+            LOGGER.error("Unknown connection with id: {}", connData.getClientId());
             return;
         }
 
         String next;
         try {
-            while ((next = queue.poll()) != null) {
+            while ((next = connData.pollFromBuffer()) != null) {
                 connection.sendMessage(next);
             }
         } catch (IOException e) {
-            LOGGER.error("Cannot send message to {}", session.getClientId(), e);
-            closeConnection(session.getClientId());
+            LOGGER.error("Cannot send message to {}", connData.getClientId(), e);
+            closeConnection(connData.getClientId());
         }
     }
 
