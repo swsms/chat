@@ -1,7 +1,9 @@
 package org.artb.chat.server;
 
 import org.artb.chat.common.connection.Connection;
-import org.artb.chat.common.connection.TcpNioConnection;
+import org.artb.chat.common.connection.ConnectionConfig;
+import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
+import org.artb.chat.common.connection.tcpnio.TcpNioConnectionConfig;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.storage.UserInfoStorage;
@@ -101,10 +103,13 @@ public class ChatServer {
                 }
 
                 if (key.isAcceptable()) {
+                    LOGGER.info("Register");
                     register(key);
                 } else if (key.isReadable()) {
+                    LOGGER.info("Read data");
                     read(key);
                 } else if (key.isWritable()) {
+                    LOGGER.info("Write data");
                     write(key);
                 }
             }
@@ -128,23 +133,26 @@ public class ChatServer {
         final SocketChannel clientSocket;
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
+
+            Connection connection = new TcpNioConnection(selector, clientSocket);
+            connections.putIfAbsent(clientId, connection);
+
             clientSocket.configureBlocking(false);
-            clientSocket.register(selector, OP_READ, new Session(clientId));
+            clientSocket.register(selector, OP_READ, new Session(clientId, connection));
+
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
             LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
+
+            enqueue(newPersonalTask(REQUEST_NAME_MSG, clientId));
         } catch (IOException e) {
             LOGGER.error("Cannot register new client with id {}", clientId, e);
-            return;
         }
-
-        Connection connection = new TcpNioConnection(selector, clientSocket);
-        connections.putIfAbsent(clientId, connection);
-
-        enqueue(newPersonalTask(REQUEST_NAME_MSG, clientId));
     }
 
     private void read(SelectionKey key) {
         Session session = (Session) key.attachment();
+        Queue<String> queue = session.getPendingData();
+
         Connection connection = connections.get(session.getClientId());
         if (connection == null) {
             LOGGER.error("Unknown connection with id: {}", session.getClientId());
@@ -155,8 +163,8 @@ public class ChatServer {
             Message msg = Utils.deserialize(connection.takeMessage());
             LOGGER.info("{}", msg);
             if (session.isAuth()) {
-                msg.setSender(session.getName()); // server knows the actual name of the client
-                enqueue(newBroadcastTask(msg));
+                msg.setSender(session.getName());
+                sendAll(msg);
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
@@ -170,20 +178,44 @@ public class ChatServer {
             }
         } catch (IOException e) {
             LOGGER.error("Incorrect message received", e);
-            enqueue(newPersonalTask(INCORRECT_FORMAT_MSG, session.getClientId()));
+            closeConnection(session.getClientId());
+        }
+    }
+
+    private void sendAll(Message msg) {
+        try {
+            String jsonMsg = Utils.serialize(msg);
+            selector.keys().forEach((key) -> {
+                Session session = (Session) key.attachment();
+                if (session != null) {
+                    session.getPendingData().add(jsonMsg);
+                    session.getConnection().notification();
+                }
+            });
+        } catch (IOException e) {
+            LOGGER.info("Cannot send message: {}", msg, e);
         }
     }
 
     private void write(SelectionKey key) {
-//        Session session = (Session) key.attachment();
-//        Connection connection = connections.get(session.getClientId());
-//        if (connection == null) {
-//            LOGGER.error("Unknown connection with id: {}", session.getClientId());
-//            return;
-//        }
-        LOGGER.warn("Writing");
+        Session session = (Session) key.attachment();
+        Queue<String> queue = session.getPendingData();
 
+        Connection connection = connections.get(session.getClientId());
+        if (connection == null) {
+            LOGGER.error("Unknown connection with id: {}", session.getClientId());
+            return;
+        }
 
+        String next = null;
+        try {
+            while ((next = queue.poll()) != null) {
+                connection.sendMessage(next);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Cannot send message to {}", session.getClientId(), e);
+            closeConnection(session.getClientId());
+        }
     }
 
     private void enqueue(SendingTask task) {

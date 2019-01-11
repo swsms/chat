@@ -4,7 +4,7 @@ import org.artb.chat.client.core.AsyncMessageReader;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.connection.Connection;
-import org.artb.chat.common.connection.TcpNioConnection;
+import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.slf4j.Logger;
@@ -58,10 +58,9 @@ public class ChatClient {
             }
         } catch (IOException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
-            running = false;
+        } finally {
+            stop();
         }
-
-        stop();
     }
 
     private void stop() {
@@ -71,7 +70,7 @@ public class ChatClient {
             if (connection != null) {
                 connection.close();
             }
-            LOGGER.info("Client successfully stopped");
+            LOGGER.info("Client stopped");
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
         }
@@ -144,10 +143,11 @@ public class ChatClient {
             } else {
                 LOGGER.info("Cannot connect to {}:{}", serverHost, serverPort);
                 running = false;
+                stop();
             }
         } catch (IOException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
-            running = false;
+            stop();
         }
     }
 }

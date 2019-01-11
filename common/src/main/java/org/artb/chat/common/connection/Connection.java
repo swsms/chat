@@ -13,4 +13,6 @@ public interface Connection {
     boolean connect() throws IOException;
 
     void close() throws IOException;
+
+    ConnectionConfig config();
 }

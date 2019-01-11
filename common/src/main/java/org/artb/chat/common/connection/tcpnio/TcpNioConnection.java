@@ -1,6 +1,8 @@
-package org.artb.chat.common.connection;
+package org.artb.chat.common.connection.tcpnio;
 
 import org.artb.chat.common.Constants;
+import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.ConnectionConfig;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -70,6 +72,11 @@ public class TcpNioConnection implements Connection {
     public void close() throws IOException {
         socket.close();
         key.cancel();
+    }
+
+    @Override
+    public ConnectionConfig config() {
+        return new TcpNioConnectionConfig(socket, key);
     }
 
     private void switchMode(int targetMode) {
