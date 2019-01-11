@@ -2,8 +2,6 @@ package org.artb.chat.common.connection.tcpnio;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.Connection;
-import org.artb.chat.common.connection.ConnectionConfig;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -43,7 +41,9 @@ public class TcpNioConnection implements Connection {
     @Override
     public void sendMessage(String msg) throws IOException {
         ByteBuffer buf = ByteBuffer.wrap(msg.getBytes(charset));
-        socket.write(buf);
+        if (socket.write(buf) < 0) {
+            throw new IOException("Cannot write data to channel");
+        }
         switchMode(OP_READ);
     }
 
@@ -70,13 +70,12 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public void close() throws IOException {
-        socket.close();
-        key.cancel();
-    }
-
-    @Override
-    public ConnectionConfig config() {
-        return new TcpNioConnectionConfig(socket, key);
+        if (socket != null) {
+            socket.close();
+        }
+        if (key != null) {
+            key.cancel();
+        }
     }
 
     private void switchMode(int targetMode) {

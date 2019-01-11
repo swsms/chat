@@ -70,7 +70,7 @@ public class ChatClient {
             if (connection != null) {
                 connection.close();
             }
-            LOGGER.info("Client stopped");
+            LOGGER.info("Client successfully stopped");
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
         }
@@ -121,7 +121,7 @@ public class ChatClient {
             display.print(msg);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
-            stop();
+            running = false;
         }
     }
 
@@ -143,11 +143,10 @@ public class ChatClient {
             } else {
                 LOGGER.info("Cannot connect to {}:{}", serverHost, serverPort);
                 running = false;
-                stop();
             }
         } catch (IOException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
-            stop();
+            running = false;
         }
     }
 }

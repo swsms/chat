@@ -1,9 +1,7 @@
 package org.artb.chat.server;
 
 import org.artb.chat.common.connection.Connection;
-import org.artb.chat.common.connection.ConnectionConfig;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
-import org.artb.chat.common.connection.tcpnio.TcpNioConnectionConfig;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.storage.UserInfoStorage;
@@ -103,13 +101,10 @@ public class ChatServer {
                 }
 
                 if (key.isAcceptable()) {
-                    LOGGER.info("Register");
                     register(key);
                 } else if (key.isReadable()) {
-                    LOGGER.info("Read data");
                     read(key);
                 } else if (key.isWritable()) {
-                    LOGGER.info("Write data");
                     write(key);
                 }
             }
@@ -185,13 +180,15 @@ public class ChatServer {
     private void sendAll(Message msg) {
         try {
             String jsonMsg = Utils.serialize(msg);
-            selector.keys().forEach((key) -> {
-                Session session = (Session) key.attachment();
-                if (session != null) {
-                    session.getPendingData().add(jsonMsg);
-                    session.getConnection().notification();
-                }
-            });
+            selector.keys().stream()
+                    .filter(SelectionKey::isValid)
+                    .forEach((key) -> {
+                        Session session = (Session) key.attachment();
+                        if (session != null) {
+                            session.getPendingData().add(jsonMsg);
+                            session.getConnection().notification();
+                        }
+                    });
         } catch (IOException e) {
             LOGGER.info("Cannot send message: {}", msg, e);
         }
@@ -207,7 +204,7 @@ public class ChatServer {
             return;
         }
 
-        String next = null;
+        String next;
         try {
             while ((next = queue.poll()) != null) {
                 connection.sendMessage(next);
