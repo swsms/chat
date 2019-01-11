@@ -4,9 +4,9 @@ import java.io.IOException;
 
 public interface Connection {
 
-    void sendMessage(String msg) throws IOException;
+    void send(String msg) throws IOException;
 
-    String takeMessage() throws IOException;
+    String take() throws IOException;
 
     void notification();
 

@@ -82,7 +82,7 @@ public class TcpNioChatClient extends ChatClient {
 
     private void processRead() {
         try {
-            Message msg = Utils.deserialize(connection.takeMessage());
+            Message msg = Utils.deserialize(connection.take());
             display.print(msg);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
@@ -94,7 +94,7 @@ public class TcpNioChatClient extends ChatClient {
         while (!messages.isEmpty()) {
             Message msg = messages.poll();
             try {
-                connection.sendMessage(Utils.serialize(msg));
+                connection.send(Utils.serialize(msg));
             } catch (IOException e) {
                 LOGGER.error("Cannot write message: {}", msg, e);
             }

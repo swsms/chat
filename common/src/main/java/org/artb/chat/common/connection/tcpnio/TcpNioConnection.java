@@ -39,7 +39,7 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public void sendMessage(String msg) throws IOException {
+    public void send(String msg) throws IOException {
         ByteBuffer buf = ByteBuffer.wrap(msg.getBytes(charset));
         if (socket.write(buf) < 0) {
             throw new IOException("Cannot write data to channel");
@@ -48,7 +48,7 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public String takeMessage() throws IOException {
+    public String take() throws IOException {
         // TODO check it
         socket.read(buffer);
         if (socket.read(buffer) < 0) {

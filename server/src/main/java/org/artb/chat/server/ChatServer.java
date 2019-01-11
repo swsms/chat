@@ -1,11 +1,12 @@
 package org.artb.chat.server;
 
+import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
-import org.artb.chat.server.core.connection.ConnectionData;
-import org.artb.chat.server.core.storage.UserInfoStorage;
+import org.artb.chat.server.core.message.BasicMsgSender;
+import org.artb.chat.server.core.message.MsgSender;
 import org.artb.chat.server.core.task.AsyncTaskProcessor;
 import org.artb.chat.server.core.task.SendingTask;
 import org.slf4j.Logger;
@@ -24,8 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
-import static org.artb.chat.server.core.MsgConstants.*;
-import static org.artb.chat.server.core.task.SendingTask.*;
+import static org.artb.chat.server.core.message.MsgConstants.*;
 
 public class ChatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
@@ -33,8 +33,6 @@ public class ChatServer {
     private final String host;
     private final int port;
 
-    private Map<UUID, Connection> connections = new ConcurrentHashMap<>();
-    private UserInfoStorage userInfoStorage = new UserInfoStorage();
     private volatile boolean running = false;
 
     private final BlockingQueue<SendingTask> tasks = new LinkedBlockingQueue<>();
@@ -42,6 +40,9 @@ public class ChatServer {
 
     private Selector selector;
     private ServerSocketChannel serverSocket;
+
+    private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
+    private MsgSender sender = new BasicMsgSender(connections);
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -74,6 +75,17 @@ public class ChatServer {
         stop();
 
         LOGGER.info("The server has been stopped");
+    }
+
+    private void stop() {
+        running = false;
+        taskProcessor.stop();
+        try {
+            connections.keySet().forEach(this::closeConnection);
+            serverSocket.close();
+        } catch (IOException e) {
+            LOGGER.error("Cannot close socket", e);
+        }
     }
 
     private void configure() throws IOException {
@@ -111,129 +123,77 @@ public class ChatServer {
         }
     }
 
-    private void stop() {
-        running = false;
-        taskProcessor.stop();
-        try {
-            connections.keySet().forEach(this::closeConnection);
-            serverSocket.close();
-        } catch (IOException e) {
-            LOGGER.error("Cannot close socket", e);
-        }
-    }
-
     private void register(SelectionKey key) {
         UUID clientId = UUID.randomUUID();
 
         final SocketChannel clientSocket;
+        final BufferedConnection connection;
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
 
-            Connection connection = new TcpNioConnection(selector, clientSocket);
-            connections.putIfAbsent(clientId, connection);
+            connection = new BufferedConnection(
+                    clientId, new TcpNioConnection(selector, clientSocket));
 
             clientSocket.configureBlocking(false);
-            clientSocket.register(selector, OP_READ, new ConnectionData(clientId, connection));
-
-            String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
-            LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
-
-            enqueue(newPersonalTask(REQUEST_NAME_MSG, clientId));
+            clientSocket.register(selector, OP_READ, connection);
         } catch (IOException e) {
             LOGGER.error("Cannot register new client with id {}", clientId, e);
+            return;
+        }
+
+        connections.putIfAbsent(clientId, connection);
+        sender.sendOne(clientId, REQUEST_NAME_MSG);
+
+        try {
+            String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
+            LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
+        } catch (IOException e) {
+            LOGGER.warn("Cannot get remote address for {}: {}", clientId, e.getMessage());
         }
     }
 
     private void read(SelectionKey key) {
-        ConnectionData connData = (ConnectionData) key.attachment();
-
-        Connection connection = connections.get(connData.getClientId());
-        if (connection == null) {
-            LOGGER.error("Unknown connection with id: {}", connData.getClientId());
-            return;
-        }
-
+        BufferedConnection connection = (BufferedConnection) key.attachment();
         try {
-            Message msg = Utils.deserialize(connection.takeMessage());
-            LOGGER.info("{}", msg);
-            if (connData.isAuthenticated()) {
-                msg.setSender(connData.getName());
-                sendAll(msg);
+            Message msg = Utils.deserialize(connection.take());
+            LOGGER.info("Incoming message: {}", msg);
+            if (connection.isAuthenticated()) {
+                msg.setSender(connection.getUserName());
+                sender.sendAll(msg);
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
-                    enqueue(newPersonalTask(REQUEST_NAME_MSG, connData.getClientId()));
+                    sender.sendOne(connection.getId(), REQUEST_NAME_MSG);
                 } else if ("server".equalsIgnoreCase(userName)) {
-                    enqueue(newPersonalTask(NAME_DECLINED_MSG, connData.getClientId()));
+                    sender.sendOne(connection.getId(), NAME_DECLINED_MSG);
                 } else {
-                    connData.setName(userName);
-                    enqueue(newPersonalTask(NAME_ACCEPTED_MSG, connData.getClientId()));
+                    connection.setUserName(userName);
+                    sender.sendOne(connection.getId(), NAME_ACCEPTED_MSG);
                 }
             }
         } catch (IOException e) {
-            LOGGER.error("Incorrect message received", e);
-            closeConnection(connData.getClientId());
+            LOGGER.error("Cannot send message", e);
+            closeConnection(connection.getId());
         }
     }
 
-    private void sendAll(Message msg) {
-        try {
-            String jsonMsg = Utils.serialize(msg);
-            selector.keys().stream()
-                    .filter(SelectionKey::isValid)
-                    .forEach((key) -> {
-                        ConnectionData connData = (ConnectionData) key.attachment();
-                        if (connData != null && connData.isAuthenticated()) {
-                            connData.addToBuffer(jsonMsg);
-                            connData.getConnection().notification();
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.info("Cannot send message: {}", msg, e);
-        }
-    }
 
     private void write(SelectionKey key) {
-        ConnectionData connData = (ConnectionData) key.attachment();
-        Connection connection = connData.getConnection();
-        if (connection == null) {
-            LOGGER.error("Unknown connection with id: {}", connData.getClientId());
-            return;
-        }
-
-        String next;
+        BufferedConnection connection = (BufferedConnection) key.attachment();
         try {
-            while ((next = connData.pollFromBuffer()) != null) {
-                connection.sendMessage(next);
-            }
+            connection.sendPendingData();
         } catch (IOException e) {
-            LOGGER.error("Cannot send message to {}", connData.getClientId(), e);
-            closeConnection(connData.getClientId());
+            LOGGER.error("Cannot send message to {}", connection.getId(), e);
+            closeConnection(connection.getId());
         }
     }
 
-    private void enqueue(SendingTask task) {
-        tasks.add(task);
-    }
-
-    public void sendBroadcast(String message) {
-        connections.forEach((id, client) -> sendOne(id, message));
-    }
-
-    public void sendOne(UUID clientId, String message) {
-        try {
-            Connection connection = connections.get(clientId);
-            if (connection == null) {
-                LOGGER.warn("Unknown connection with id: {}", clientId);
-            } else {
-                connection.sendMessage(message);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Cannot send message to {}", clientId, e);
-        }
-    }
+//    private void enqueue(SendingTask task) {
+//        tasks.add(task);
+//    }
 
     private void closeConnection(UUID id) {
+        LOGGER.info("Trying to close connection {}", id);
         Connection connection = connections.remove(id);
         if (connection != null) {
             try {
@@ -242,5 +202,6 @@ public class ChatServer {
                 LOGGER.error("Error when closing connection", e);
             }
         }
+        sender.sendAll(Message.newServerMessage("Vasily has left the chat"));
     }
 }

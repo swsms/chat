@@ -1,4 +1,4 @@
-package org.artb.chat.server.core;
+package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.message.Message;
 

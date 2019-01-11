@@ -31,10 +31,10 @@ public class AsyncTaskProcessor {
                     String msgJson = Utils.serialize(task.getMessage());
                     switch (task.getMode()) {
                         case PERSONAL:
-                            chat.sendOne(task.getClientId(), msgJson);
+//                            chat.sendOne(task.getClientId(), msgJson);
                             break;
                         case BROADCAST:
-                            chat.sendBroadcast(msgJson);
+//                            chat.sendBroadcast(msgJson);
                             break;
                     }
                 } catch (Exception e) {
