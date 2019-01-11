@@ -102,6 +102,8 @@ public class ChatServer {
                     register(key);
                 } else if (key.isReadable()) {
                     read(key);
+                } else if (key.isWritable()) {
+                    write(key);
                 }
             }
         }
@@ -168,6 +170,18 @@ public class ChatServer {
             LOGGER.error("Incorrect message received", e);
             enqueue(newPersonalTask(INCORRECT_FORMAT_MSG, session.getClientId()));
         }
+    }
+
+    private void write(SelectionKey key) {
+//        Session session = (Session) key.attachment();
+//        Connection connection = connections.get(session.getClientId());
+//        if (connection == null) {
+//            LOGGER.error("Unknown connection with id: {}", session.getClientId());
+//            return;
+//        }
+        LOGGER.warn("Writing");
+
+
     }
 
     private void enqueue(SendingTask task) {
