@@ -2,6 +2,7 @@ package org.artb.chat.client.core.tcpnio;
 
 import org.artb.chat.client.core.ChatClient;
 import org.artb.chat.client.core.ClientException;
+import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
@@ -27,7 +28,7 @@ public class TcpNioChatClient extends ChatClient {
     }
 
     @Override
-    protected void configure() throws ClientException {
+    protected Connection configureConnection() throws ClientException {
         try {
             selector = Selector.open();
 
@@ -37,7 +38,7 @@ public class TcpNioChatClient extends ChatClient {
             socket.connect(new InetSocketAddress(serverHost, serverPort));
             socket.register(selector, OP_CONNECT);
 
-            connection = new TcpNioConnection(selector, socket);
+            return new TcpNioConnection(selector, socket);
         } catch (IOException e) {
             LOGGER.info("Cannot configure client", e);
             throw new ClientException(e);
@@ -46,7 +47,7 @@ public class TcpNioChatClient extends ChatClient {
 
     @Override
     protected void doMainLogic() throws ClientException {
-        while(running) {
+        while(running.get()) {
             int numKeys;
             try {
                 numKeys = selector.select();
@@ -85,7 +86,7 @@ public class TcpNioChatClient extends ChatClient {
             display.print(msg);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
-            running = false;
+            running.set(false);
         }
     }
 
@@ -106,11 +107,11 @@ public class TcpNioChatClient extends ChatClient {
                 LOGGER.info("Established connection with {}:{}", serverHost, serverPort);
             } else {
                 LOGGER.info("Cannot connect to {}:{}", serverHost, serverPort);
-                running = false;
+                running.set(false);
             }
         } catch (IOException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
-            running = false;
+            running.set(false);
         }
     }
 }

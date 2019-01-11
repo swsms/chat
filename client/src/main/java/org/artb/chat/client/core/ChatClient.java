@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ChatClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatClient.class);
@@ -18,12 +19,11 @@ public abstract class ChatClient {
     protected final int serverPort;
 
     protected Connection connection;
-    protected volatile boolean running = true;
-
     protected final UIDisplay display = new UIConsoleDisplay();
 
+    protected final AtomicBoolean running = new AtomicBoolean();
     protected final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final AsyncMsgReader asyncMessageReader = new AsyncMsgReader(this::enqueueMessage);
+    private final MsgReader msgReader = new MsgReader(this::enqueueMessage, running);
 
     protected ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
@@ -35,17 +35,18 @@ public abstract class ChatClient {
         connection.notification();
     }
 
-    protected abstract void configure() throws ClientException;
+    protected abstract Connection configureConnection() throws ClientException;
 
     protected abstract void doMainLogic() throws ClientException;
 
     public void start() {
-        running = true;
+        running.set(true);
+
+        Thread asyncMsgReader = new Thread(msgReader);
+        asyncMsgReader.start();
+
         try {
-            configure();
-
-            asyncMessageReader.start();
-
+            this.connection = configureConnection();
             doMainLogic();
         } catch (ClientException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
@@ -56,8 +57,7 @@ public abstract class ChatClient {
 
     public void stop() {
         try {
-            running = false;
-            asyncMessageReader.stop();
+            running.set(false);
             if (connection != null) {
                 connection.close();
             }
