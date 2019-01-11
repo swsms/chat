@@ -1,5 +1,7 @@
 package org.artb.chat.client;
 
+import org.artb.chat.client.core.ChatClient;
+import org.artb.chat.client.core.tcpnio.TcpNioChatClient;
 import org.artb.chat.common.settings.Settings;
 import org.artb.chat.common.settings.SettingsParseException;
 import org.slf4j.Logger;
@@ -14,7 +16,7 @@ public class ClientRunner {
     public static void main(String[] args) {
         try {
             Settings settings = Settings.fromArgsArray(args);
-            ChatClient client = new ChatClient(settings.getHost(), settings.getPort());
+            ChatClient client = new TcpNioChatClient(settings.getHost(), settings.getPort());
             client.start();
         } catch (SettingsParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
