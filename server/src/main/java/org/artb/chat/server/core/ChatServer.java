@@ -1,4 +1,4 @@
-package org.artb.chat.server;
+package org.artb.chat.server.core;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.BufferedConnection;
