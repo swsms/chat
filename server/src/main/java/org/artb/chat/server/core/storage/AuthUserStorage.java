@@ -3,16 +3,28 @@ package org.artb.chat.server.core.storage;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+// TODO work on it
 public class AuthUserStorage {
 
-    private ConcurrentHashMap<String, UUID> authenticatedUsers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<UUID, String> authUsers = new ConcurrentHashMap<>();
 
-    public boolean put(UUID clientId, String name) {
-        UUID oldId = authenticatedUsers.putIfAbsent(name, clientId);
-        return oldId == null;
+    public void saveUser(UUID clientId, String name) {
+        authUsers.putIfAbsent(clientId, name);
     }
 
-    public boolean exists(String name) {
-        return authenticatedUsers.containsKey(name);
+    public String getUserName(UUID clientId) {
+        return authUsers.get(clientId);
+    }
+
+    public boolean containsUserName(String name) {
+        return authUsers.containsValue(name);
+    }
+
+    public boolean authenticated(UUID clientId) {
+        return authUsers.containsKey(clientId);
+    }
+
+    public void removeUser(UUID clientId) {
+        authUsers.remove(clientId);
     }
 }

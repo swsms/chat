@@ -5,11 +5,12 @@ import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
+import org.artb.chat.server.core.message.MessageArrivedEvent;
+import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.BasicMsgSender;
 import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.storage.AuthUserStorage;
 import org.artb.chat.server.core.storage.HistoryStorage;
-import org.artb.chat.server.core.task.AsyncTaskProcessor;
-import org.artb.chat.server.core.task.SendingTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -34,44 +36,48 @@ public class ChatServer {
     private final String host;
     private final int port;
 
-    private volatile boolean running = false;
-
-    private final BlockingQueue<SendingTask> tasks = new LinkedBlockingQueue<>();
-    private final AsyncTaskProcessor taskProcessor = new AsyncTaskProcessor(this, tasks);
+    private volatile AtomicBoolean runningFlag = new AtomicBoolean();
 
     private Selector selector;
     private ServerSocketChannel serverSocket;
 
     private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    private MsgSender sender = new BasicMsgSender(connections);
-    private final HistoryStorage historyStorage = new HistoryStorage(Constants.HISTORY_SIZE);
+    private final BlockingQueue<MessageArrivedEvent> events = new LinkedBlockingQueue<>();
+    private final AuthUserStorage users = new AuthUserStorage();
+    private final HistoryStorage history = new HistoryStorage(Constants.HISTORY_SIZE);
+    private MsgSender sender = new BasicMsgSender(users, connections);
+
+    private final MessageProcessor messageProcessor;
 
     public ChatServer(String host, int port) {
         this.host = host;
         this.port = port;
+        this.messageProcessor = new MessageProcessor(
+                history, sender, events, users, runningFlag);
     }
 
     public void start() {
-        running = true;
+        runningFlag.set(true);
 
         try {
             configure();
             LOGGER.info("Server started on {}:{}", host, port);
         } catch (IOException e) {
             LOGGER.error("Cannot start server on {}:{}", host, port, e);
-            running = false;
+            runningFlag.set(false);
         }
 
-        taskProcessor.start();
+        Thread asyncMsgProcessor = new Thread(messageProcessor);
+        asyncMsgProcessor.start();
 
         try {
             LOGGER.info("Starting process keys loop");
-            while (running) {
+            while (runningFlag.get()) {
                 processKeys();
             }
         } catch (IOException e) {
             LOGGER.error("An error occurs while keys processing", e);
-            running = false;
+            runningFlag.set(false);
         }
 
         stop();
@@ -80,8 +86,7 @@ public class ChatServer {
     }
 
     private void stop() {
-        running = false;
-        taskProcessor.stop();
+        runningFlag.set(false);
         try {
             connections.keySet().forEach(this::closeConnection);
             serverSocket.close();
@@ -132,7 +137,6 @@ public class ChatServer {
         final BufferedConnection connection;
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
-
             connection = new BufferedConnection(
                     clientId, new TcpNioConnection(selector, clientSocket));
 
@@ -159,34 +163,12 @@ public class ChatServer {
         try {
             Message msg = Utils.deserialize(connection.take());
             LOGGER.info("Incoming message: {}", msg);
-            if (connection.isAuthenticated()) {
-                msg.setSender(connection.getUserName());
-                // TODO not atomicity here
-                sender.sendBroadcast(msg);
-                historyStorage.add(msg);
-            } else {
-                String userName = msg.getContent();
-                if (Utils.isBlank(userName)) {
-                    sender.send(connection.getId(), REQUEST_NAME_MSG);
-                } else {
-                    // TODO this section may cause reordering problem
-                    connection.setUserName(userName);
-
-                    String text = String.format("Congratulations! You have successfully logged as %s.", userName);
-                    sender.send(connection.getId(), Message.newServerMessage(text));
-                    sender.sendBroadcast(Message.newServerMessage(connection.getUserName() + " is ready to chatting"));
-
-                    List<Message> history = historyStorage.history();
-                    LOGGER.info("Sent history size: {}", history.size());
-                    sender.send(connection.getId(), history);
-                }
-            }
+            events.add(new MessageArrivedEvent(connection.getId(), msg, connection));
         } catch (IOException e) {
             LOGGER.error("Cannot send message", e);
             closeConnection(connection.getId());
         }
     }
-
 
     private void write(SelectionKey key) {
         BufferedConnection connection = (BufferedConnection) key.attachment();
@@ -198,18 +180,17 @@ public class ChatServer {
         }
     }
 
-//    private void enqueue(SendingTask task) {
-//        tasks.add(task);
-//    }
-
     private void closeConnection(UUID id) {
         LOGGER.info("Trying to close connection {}", id);
         BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
-                if (connection.isAuthenticated()) {
-                    sender.sendBroadcast(Message.newServerMessage(connection.getUserName() + " has left the chat"));
+                if (users.authenticated(id)) {
+                    sender.sendBroadcast(
+                            Message.newServerMessage(
+                                    users.getUserName(id) + " has left the chat"));
+                    // TODO remove from storage
                 }
             } catch (IOException e) {
                 LOGGER.error("Error when closing connection", e);

@@ -20,7 +20,7 @@ public class Message {
      */
     @JsonSerialize(using = ZdtFieldSerializer.class)
     @JsonDeserialize(using = ZdtFieldDeserializer.class)
-    private ZonedDateTime served = ZonedDateTime.now(ZoneId.of("Europe/Moscow"));
+    private ZonedDateTime served;
 
     public Message() { }
 
@@ -75,6 +75,10 @@ public class Message {
 
     public ZonedDateTime getServed() {
         return served;
+    }
+
+    public void setServed(ZonedDateTime served) {
+        this.served = served;
     }
 
     @Override

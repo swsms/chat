@@ -3,6 +3,7 @@ package org.artb.chat.server.core.message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
+import org.artb.chat.server.core.storage.AuthUserStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,9 +16,12 @@ import java.util.UUID;
 public class BasicMsgSender implements MsgSender {
     private static final Logger LOGGER = LoggerFactory.getLogger(BasicMsgSender.class);
 
+    private final AuthUserStorage userStorage;
     private final Map<UUID, BufferedConnection> connections;
 
-    public BasicMsgSender(Map<UUID, BufferedConnection> connections) {
+    public BasicMsgSender(AuthUserStorage userStorage,
+                          Map<UUID, BufferedConnection> connections) {
+        this.userStorage = userStorage;
         this.connections = connections;
     }
 
@@ -26,7 +30,7 @@ public class BasicMsgSender implements MsgSender {
         try {
             String jsonMsg = Utils.serialize(msg);
             connections.forEach((id, connection) -> {
-                if (connection.isAuthenticated()) {
+                if (userStorage.authenticated(id)) {
                     connection.addToBuffer(jsonMsg);
                     connection.notification();
                 }
