@@ -2,7 +2,6 @@ package org.artb.chat.server;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.BufferedConnection;
-import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
@@ -169,12 +168,12 @@ public class ChatServer {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
                     sender.send(connection.getId(), REQUEST_NAME_MSG);
-                } else if ("server".equalsIgnoreCase(userName)) {
-                    sender.send(connection.getId(), NAME_DECLINED_MSG);
                 } else {
                     // TODO this section may cause reordering problem
                     connection.setUserName(userName);
-                    sender.send(connection.getId(), NAME_ACCEPTED_MSG);
+
+                    String text = String.format("Congratulations! You have successfully logged as %s.", userName);
+                    sender.send(connection.getId(), Message.newServerMessage(text));
                     sender.sendBroadcast(Message.newServerMessage(connection.getUserName() + " is ready to chatting"));
 
                     List<Message> history = historyStorage.history();

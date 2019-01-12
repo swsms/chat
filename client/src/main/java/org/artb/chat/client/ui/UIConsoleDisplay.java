@@ -29,6 +29,4 @@ public class UIConsoleDisplay implements UIDisplay {
     public void print(String notification) {
         System.out.println(notification);
     }
-
-
 }

@@ -6,7 +6,7 @@ import static org.artb.chat.common.message.Message.*;
 
 public final class MsgConstants {
 
-    public static final String REQUEST_NAME_MSG_TEXT = "Please, enter your name to start chatting.";
+    public static final String REQUEST_NAME_MSG_TEXT = "Welcome to the chat! Please, enter a name to start chatting.";
     public static final String NAME_ACCEPTED_MSG_TEXT = "The name was accepted.";
     public static final String NAME_DECLINED_MSG_TEXT = "The name was declined, try another one.";
     public static final String INCORRECT_FORMAT_MSG_TEXT =
