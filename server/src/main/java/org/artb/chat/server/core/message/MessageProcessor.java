@@ -1,8 +1,9 @@
 package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
+import org.artb.chat.server.core.command.Command;
+import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.storage.AuthUserStorage;
 import org.artb.chat.server.core.storage.HistoryStorage;
 import org.slf4j.Logger;
@@ -51,9 +52,17 @@ public class MessageProcessor implements Runnable {
                 return;
             }
 
+            CommandFactory factory = new CommandFactory(event.getConnection(), sender);
+
             Message incomingMessage = event.getMessage();
             UUID clientId = event.getClientId();
             String msgContent = incomingMessage.getContent().trim();
+
+            if (msgContent.startsWith(Command.CMD_CHAR)) {
+                Command command = factory.createCommand(msgContent);
+                command.execute();
+                continue;
+            }
 
             if (userStorage.authenticated(clientId)) {
                 broadcastProcessedMessage(clientId, msgContent);

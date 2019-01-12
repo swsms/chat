@@ -1,16 +1,27 @@
 package org.artb.chat.server.core.command;
 
+import org.artb.chat.common.connection.BufferedConnection;
+import org.artb.chat.server.core.message.MsgSender;
+
 public class CommandFactory {
+
+    private final BufferedConnection connection;
+    private final MsgSender sender;
+
+    public CommandFactory(BufferedConnection connection, MsgSender sender) {
+        this.connection = connection;
+        this.sender = sender;
+    }
 
     /**
      * It creates a command according to the given line.
      *
-     * @param line the string representation of a command (with parameters)
+     * @param content the string representation of a command (with parameters)
      *
      * @return command or a special type DoNothingCommand
      */
-    public Command createCommand(String line) throws CommandParsingException {
-        String[] lineParts = line.split("\\s+");
+    public Command createCommand(String content) {
+        String[] lineParts = content.split("\\s+");
         String command = lineParts[0];
 
         CommandType[] types = CommandType.values();
@@ -24,14 +35,14 @@ public class CommandFactory {
         }
 
         if (foundCommand == null) {
-            return new DoNothingCommand();
+            return new NotValidCommand(content, connection, sender);
         }
 
         switch (foundCommand) {
             case HELP:
                 return new HelpCommand();
             case EXIT:
-                return new HelpCommand();
+                return new ExitCommand(connection, sender);
             case RENAME:
                 if (lineParts.length < 2) {
                     throw new CommandParsingException("No new name specified");
@@ -41,7 +52,7 @@ public class CommandFactory {
             case USERS:
                 return new UsersCommand();
             default:
-                return new DoNothingCommand();
+                return new NotValidCommand(content, connection, sender);
         }
     }
 }
