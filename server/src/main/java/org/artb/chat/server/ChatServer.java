@@ -181,20 +181,21 @@ public class ChatServer {
     }
 
     private void closeConnection(UUID id) {
-        LOGGER.info("Trying to close connection {}", id);
+        LOGGER.info("Closing connection with {}", id);
+
         BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
-                if (users.authenticated(id)) {
-                    sender.sendBroadcast(
-                            Message.newServerMessage(
-                                    users.getUserName(id) + " has left the chat"));
-                    // TODO remove from storage
-                }
             } catch (IOException e) {
-                LOGGER.error("Error when closing connection", e);
+                LOGGER.error("Cannot close connection", e);
             }
+        }
+
+        if (users.authenticated(id)) {
+            String user = users.removeUser(id);
+            String text = String.format(LEFT_CHAT_TEMPLATE, user);
+            sender.sendBroadcast(Message.newServerMessage(text));
         }
     }
 }

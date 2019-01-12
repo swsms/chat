@@ -34,4 +34,6 @@ public final class MsgConstants {
     public static final String LIST_OF_USERS_TEMPLATE =
             "There is %d users currently connected to the chat:\n%s";
 
+    public static final String LEFT_CHAT_TEMPLATE = "%s has left the chat";
+
 }

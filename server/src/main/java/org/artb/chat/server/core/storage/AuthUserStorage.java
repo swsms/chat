@@ -24,8 +24,8 @@ public class AuthUserStorage {
         return authUsers.containsKey(clientId);
     }
 
-    public void removeUser(UUID clientId) {
-        authUsers.remove(clientId);
+    public String removeUser(UUID clientId) {
+        return authUsers.remove(clientId);
     }
 
     public Collection<String> getUsers() {

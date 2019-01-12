@@ -14,7 +14,8 @@ public class ServerRunner {
         try {
             Settings settings = Settings.fromArgsArray(args);
             ChatServer server = new ChatServer(settings.getHost(), settings.getPort());
-            server.start();
+            Thread serverThread = new Thread(server::start, "main-chat-thread");
+            serverThread.start();
         } catch (SettingsParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
         } catch (Exception e) {
