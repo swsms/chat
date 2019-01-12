@@ -1,6 +1,7 @@
 package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
+import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
@@ -15,8 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.artb.chat.server.core.message.MsgConstants.NAME_ALREADY_IN_USE_MSG;
-import static org.artb.chat.server.core.message.MsgConstants.NAME_DECLINED_MSG;
+import static org.artb.chat.server.core.message.MsgConstants.*;
 
 public class MessageProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProcessor.class);
@@ -52,25 +52,27 @@ public class MessageProcessor implements Runnable {
                 return;
             }
 
-            CommandFactory factory = new CommandFactory(event.getConnection(), sender);
-
             Message incomingMessage = event.getMessage();
             UUID clientId = event.getClientId();
             String msgContent = incomingMessage.getContent().trim();
 
-            if (msgContent.startsWith(Command.CMD_CHAR)) {
-                Command command = factory.createCommand(msgContent);
-                command.execute();
-                continue;
-            }
-
             if (userStorage.authenticated(clientId)) {
-                broadcastProcessedMessage(clientId, msgContent);
+                if (msgContent.startsWith(Command.CMD_CHAR)) {
+                    executeCommandForConnection(event.getConnection(), msgContent);
+                } else {
+                    broadcastProcessedMessage(clientId, msgContent);
+                }
             } else {
                 tryAuthenticate(clientId, msgContent);
             }
         }
         LOGGER.info("Successfully stopped");
+    }
+
+    private void executeCommandForConnection(BufferedConnection connection, String content) {
+        CommandFactory factory = new CommandFactory(connection, sender);
+        Command command = factory.createCommand(content);
+        command.execute();
     }
 
     private void broadcastProcessedMessage(UUID id, String text) {
@@ -93,12 +95,13 @@ public class MessageProcessor implements Runnable {
             sender.send(clientId, NAME_ALREADY_IN_USE_MSG);
         } else {
             userStorage.saveUser(clientId, userName);
-            String text = String.format("Congratulations! You have successfully logged as %s.", userName);
+
+            String text = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
             sender.send(clientId, Message.newServerMessage(text));
             sender.sendBroadcast(Message.newServerMessage(userName + " is ready to chatting."));
 
             List<Message> history = historyStorage.history();
-            LOGGER.info("Sent history size: {}", history.size());
+            LOGGER.info("Sent history with size {} entries.", history.size());
             sender.send(clientId, history);
         }
     }

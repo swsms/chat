@@ -47,12 +47,12 @@ public class ChatServer {
     private final HistoryStorage history = new HistoryStorage(Constants.HISTORY_SIZE);
     private MsgSender sender = new BasicMsgSender(users, connections);
 
-    private final MessageProcessor messageProcessor;
+    private final MessageProcessor msgProcessor;
 
     public ChatServer(String host, int port) {
         this.host = host;
         this.port = port;
-        this.messageProcessor = new MessageProcessor(
+        this.msgProcessor = new MessageProcessor(
                 history, sender, events, users, runningFlag);
     }
 
@@ -67,7 +67,7 @@ public class ChatServer {
             runningFlag.set(false);
         }
 
-        Thread asyncMsgProcessor = new Thread(messageProcessor);
+        Thread asyncMsgProcessor = new Thread(msgProcessor, "msg-processor-thread");
         asyncMsgProcessor.start();
 
         try {

@@ -26,4 +26,9 @@ public final class MsgConstants {
     public static final String NOT_VALID_COMMAND_TEMPLATE =
             "%s is not a valid command. In the chat, all messages that start with " +
             "the / character are interpreted as commands just like in Slack.";
+
+    public static final String SUCCESSFULLY_LOGGED_TEMPLATE =
+            "Congratulations! You have successfully logged as %s. " +
+                    "Type /help to show a list of commands.";
+
 }

@@ -1,7 +1,7 @@
 package org.artb.chat.server.core.command;
 
 public enum CommandType {
-    HELP("/help", "Show command descriptions"),
+    HELP("/help", "Show a list of commands"),
     EXIT("/exit", "Leave the chat"),
     RENAME("/rename", "Change your name"),
     USERS("/users", "Get a list of connected users");
