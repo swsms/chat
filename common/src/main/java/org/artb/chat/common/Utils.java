@@ -9,6 +9,9 @@ import org.artb.chat.common.message.Message;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -47,5 +50,11 @@ public final class Utils {
 
     public static boolean nonBlank(String str) {
         return !isBlank(str);
+    }
+
+    public static LocalDateTime toLocalTimeZoneWithoutNano(ZonedDateTime zdt) {
+        return zdt.withZoneSameInstant(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .withNano(0);
     }
 }

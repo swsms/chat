@@ -1,8 +1,11 @@
 package org.artb.chat.client.ui;
 
+import org.artb.chat.common.Utils;
 import org.artb.chat.common.message.Message;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 public class UIConsoleDisplay implements UIDisplay {
 
@@ -13,9 +16,9 @@ public class UIConsoleDisplay implements UIDisplay {
                 print(msg.getContent());
                 break;
             case USER_TEXT:
-                LocalDateTime now = LocalDateTime.now().withNano(0);
+                LocalDateTime when = Utils.toLocalTimeZoneWithoutNano(msg.getServed());
                 System.out.printf("[%s] %s: %s\n",
-                        now.toString().replace('T', ' '),
+                        when.toString().replace('T', ' '),
                         msg.getSender(),
                         msg.getContent());
                 break;
@@ -26,4 +29,6 @@ public class UIConsoleDisplay implements UIDisplay {
     public void print(String notification) {
         System.out.println(notification);
     }
+
+
 }

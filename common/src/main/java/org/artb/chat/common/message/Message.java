@@ -1,10 +1,26 @@
 package org.artb.chat.common.message;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.artb.chat.common.json.ZdtFieldDeserializer;
+import org.artb.chat.common.json.ZdtFieldSerializer;
+
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 public class Message {
 
     private String content;
     private Type type;
     private String sender;
+
+    /**
+     * This field stores where the message was actually processed on server.
+     * It also contain zone to correct show the message on clients
+     */
+    @JsonSerialize(using = ZdtFieldSerializer.class)
+    @JsonDeserialize(using = ZdtFieldDeserializer.class)
+    private ZonedDateTime served = ZonedDateTime.now(ZoneId.of("Europe/Moscow"));
 
     public Message() { }
 
@@ -55,6 +71,10 @@ public class Message {
 
     public void setSender(String sender) {
         this.sender = sender;
+    }
+
+    public ZonedDateTime getServed() {
+        return served;
     }
 
     @Override

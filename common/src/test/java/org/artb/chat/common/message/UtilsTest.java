@@ -5,6 +5,8 @@ import org.artb.chat.common.Utils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,18 +15,31 @@ import static org.testng.Assert.*;
 public class UtilsTest {
 
     @Test
-    public void testSerialize() throws JsonProcessingException {
+    public void testSerialize() throws IOException {
         Message msg = new Message();
         msg.setContent("Hello");
-        Utils.serialize(msg);
+        String serializedMsg = Utils.serialize(msg);
+        assertNotNull(serializedMsg);
+        Utils.deserialize(serializedMsg);
     }
 
     @Test
-    public void testDeserialize() throws IOException {
+    public void zonedDateTime() throws JsonProcessingException {
+        ZonedDateTime date = ZonedDateTime.parse("2016-10-02T20:15:30+01:00",
+                DateTimeFormatter.ISO_DATE_TIME);
+
+        String zone = DateTimeFormatter.ISO_DATE_TIME.format(date);
+        System.out.println(date);
+
+    }
+
+    @Test
+    public void testDeserializeWithServed() throws IOException {
         String json = "{\"content\":\"Hello\"}";
         Message msg = Utils.deserialize(json);
         assertEquals(msg.getContent(), "Hello");
     }
+
 
     @Test
     public void testDeserializeList() throws IOException {
