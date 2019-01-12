@@ -2,17 +2,23 @@ package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.message.Message;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface MsgSender {
 
     /**
-     * Broadcast sending to all authenticated users
+     * Send message to all authenticated users
      */
-    void sendAll(Message msg);
+    void sendBroadcast(Message msg);
 
     /**
-     * Send a message to a user
+     * Send a message to user
      */
-    void sendOne(UUID targetId, Message msg);
+    void send(UUID targetId, Message msg);
+
+    /**
+     * Send several messages to user
+     */
+    void send(UUID targetId, List<Message> msgList);
 }

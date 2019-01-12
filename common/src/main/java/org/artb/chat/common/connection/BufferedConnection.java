@@ -1,6 +1,10 @@
 package org.artb.chat.common.connection;
 
+import org.artb.chat.common.message.Message;
+
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -17,14 +21,21 @@ public class BufferedConnection extends IdentifiableConnection {
 
     public void sendPendingData() throws IOException {
         String next;
+        List<String> messages = new ArrayList<>();
         while ((next = dataBuffer.poll()) != null) {
-            connection.send(next);
+            messages.add(next);
         }
+        connection.send(messages);
     }
 
     @Override
     public void send(String msg) throws IOException {
         connection.send(msg);
+    }
+
+    @Override
+    public void send(List<String> messages) throws IOException {
+        connection.send(messages);
     }
 
     @Override

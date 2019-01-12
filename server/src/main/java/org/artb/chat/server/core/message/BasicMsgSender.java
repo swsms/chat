@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,7 +22,7 @@ public class BasicMsgSender implements MsgSender {
     }
 
     @Override
-    public void sendAll(Message msg) {
+    public void sendBroadcast(Message msg) {
         try {
             String jsonMsg = Utils.serialize(msg);
             connections.forEach((id, connection) -> {
@@ -35,18 +37,25 @@ public class BasicMsgSender implements MsgSender {
     }
 
     @Override
-    public void sendOne(UUID id, Message msg) {
-        try {
-            String jsonMsg = Utils.serialize(msg);
-            BufferedConnection connection = connections.get(id);
-            if (connection == null) {
-                LOGGER.warn("No connection, cannot send message {} to {}", msg, id);
-            } else {
-                connection.addToBuffer(jsonMsg);
-                connection.notification();
-            }
-        } catch (IOException e) {
-            LOGGER.info("Cannot send message: {} to {}", msg, id, e);
+    public void send(UUID id, Message msg) {
+        send(id, Collections.singletonList(msg));
+    }
+
+    @Override
+    public void send(UUID targetId, List<Message> msgList) {
+        BufferedConnection connection = connections.get(targetId);
+        if (connection == null) {
+            LOGGER.warn("No connection for id found: {}", targetId);
+        } else {
+            msgList.forEach(msg -> {
+                try {
+                    String jsonMsg = Utils.serialize(msg);
+                    connection.addToBuffer(jsonMsg);
+                } catch (IOException e) {
+                    LOGGER.error("Cannot send message: {} to {}", msg, targetId);
+                }
+            });
+            connection.notification();
         }
     }
 }

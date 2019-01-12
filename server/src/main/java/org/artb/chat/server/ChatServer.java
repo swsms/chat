@@ -1,5 +1,6 @@
 package org.artb.chat.server;
 
+import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
@@ -7,6 +8,7 @@ import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.message.BasicMsgSender;
 import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.storage.HistoryStorage;
 import org.artb.chat.server.core.task.AsyncTaskProcessor;
 import org.artb.chat.server.core.task.SendingTask;
 import org.slf4j.Logger;
@@ -43,6 +45,7 @@ public class ChatServer {
 
     private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
     private MsgSender sender = new BasicMsgSender(connections);
+    private final HistoryStorage historyStorage = new HistoryStorage(Constants.HISTORY_SIZE);
 
     public ChatServer(String host, int port) {
         this.host = host;
@@ -142,7 +145,7 @@ public class ChatServer {
         }
 
         connections.putIfAbsent(clientId, connection);
-        sender.sendOne(clientId, REQUEST_NAME_MSG);
+        sender.send(clientId, REQUEST_NAME_MSG);
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
@@ -159,16 +162,24 @@ public class ChatServer {
             LOGGER.info("Incoming message: {}", msg);
             if (connection.isAuthenticated()) {
                 msg.setSender(connection.getUserName());
-                sender.sendAll(msg);
+                // TODO not atomicity here
+                sender.sendBroadcast(msg);
+                historyStorage.add(msg);
             } else {
                 String userName = msg.getContent();
                 if (Utils.isBlank(userName)) {
-                    sender.sendOne(connection.getId(), REQUEST_NAME_MSG);
+                    sender.send(connection.getId(), REQUEST_NAME_MSG);
                 } else if ("server".equalsIgnoreCase(userName)) {
-                    sender.sendOne(connection.getId(), NAME_DECLINED_MSG);
+                    sender.send(connection.getId(), NAME_DECLINED_MSG);
                 } else {
+                    // TODO this section may cause reordering problem
                     connection.setUserName(userName);
-                    sender.sendOne(connection.getId(), NAME_ACCEPTED_MSG);
+                    sender.send(connection.getId(), NAME_ACCEPTED_MSG);
+                    sender.sendBroadcast(Message.newServerMessage(connection.getUserName() + " is ready to chatting"));
+
+                    List<Message> history = historyStorage.history();
+                    LOGGER.info("Sent history size: {}", history.size());
+                    sender.send(connection.getId(), history);
                 }
             }
         } catch (IOException e) {
@@ -194,14 +205,16 @@ public class ChatServer {
 
     private void closeConnection(UUID id) {
         LOGGER.info("Trying to close connection {}", id);
-        Connection connection = connections.remove(id);
+        BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
+                if (connection.isAuthenticated()) {
+                    sender.sendBroadcast(Message.newServerMessage(connection.getUserName() + " has left the chat"));
+                }
             } catch (IOException e) {
                 LOGGER.error("Error when closing connection", e);
             }
         }
-        sender.sendAll(Message.newServerMessage("Vasily has left the chat"));
     }
 }

@@ -2,6 +2,8 @@ package org.artb.chat.common.connection.tcpnio;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.message.Message;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -9,6 +11,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -40,27 +44,39 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public void send(String msg) throws IOException {
-        ByteBuffer buf = ByteBuffer.wrap(msg.getBytes(charset));
-        if (socket.write(buf) < 0) {
-            throw new IOException("Cannot write data to channel");
+        send(Collections.singletonList(msg));
+    }
+
+    @Override
+    public void send(List<String> messages) throws IOException {
+        for (String msg : messages) {
+            ByteBuffer buf = ByteBuffer.wrap(msg.getBytes(charset));
+            if (socket.write(buf) < 0) {
+                throw new IOException("Cannot write data to channel");
+            }
         }
         switchMode(OP_READ);
     }
 
     @Override
     public String take() throws IOException {
-        // TODO check it
-        socket.read(buffer);
-        if (socket.read(buffer) < 0) {
+        buffer.clear();
+        int read;
+        StringBuilder builder = new StringBuilder();
+
+        while ((read = socket.read(buffer)) > 0) {
+            buffer.flip();
+            byte[] bytes = new byte[buffer.limit()];
+            buffer.get(bytes);
+            buffer.clear();
+            builder.append(new String(bytes, charset));
+        }
+
+        if (read < 0) {
             throw new IOException("Cannot read data from channel");
         }
 
-        buffer.flip();
-        byte[] bytes = new byte[buffer.limit()];
-        buffer.get(bytes);
-        buffer.clear();
-
-        return new String(bytes, charset);
+        return builder.toString();
     }
 
     @Override

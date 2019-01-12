@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AuthUserStorage {
 
-    private Map<String, UUID> authenticatedUsers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, UUID> authenticatedUsers = new ConcurrentHashMap<>();
 
     public boolean put(UUID clientId, String name) {
         UUID oldId = authenticatedUsers.putIfAbsent(name, clientId);
