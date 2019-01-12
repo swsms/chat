@@ -11,8 +11,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -43,17 +41,10 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public void send(String msg) throws IOException {
-        send(Collections.singletonList(msg));
-    }
-
-    @Override
-    public void send(List<String> messages) throws IOException {
-        for (String msg : messages) {
-            ByteBuffer buf = ByteBuffer.wrap(msg.getBytes(charset));
-            if (socket.write(buf) < 0) {
-                throw new IOException("Cannot write data to channel");
-            }
+    public void send(String data) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(data.getBytes(charset));
+        if (socket.write(buf) < 0) {
+            throw new IOException("Cannot write data to channel");
         }
         switchMode(OP_READ);
     }

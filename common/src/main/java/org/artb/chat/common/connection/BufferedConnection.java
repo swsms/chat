@@ -1,6 +1,6 @@
 package org.artb.chat.common.connection;
 
-import org.artb.chat.common.message.Message;
+import org.artb.chat.common.Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,17 +25,16 @@ public class BufferedConnection extends IdentifiableConnection {
         while ((next = dataBuffer.poll()) != null) {
             messages.add(next);
         }
-        connection.send(messages);
+        connection.send(Utils.createBatch(messages));
+    }
+
+    public void addToBuffer(String data) {
+        dataBuffer.add(data);
     }
 
     @Override
-    public void send(String msg) throws IOException {
-        connection.send(msg);
-    }
-
-    @Override
-    public void send(List<String> messages) throws IOException {
-        connection.send(messages);
+    public void send(String data) throws IOException {
+        connection.send(data);
     }
 
     @Override
@@ -56,9 +55,5 @@ public class BufferedConnection extends IdentifiableConnection {
     public void close() throws IOException {
         connection.close();
         dataBuffer.clear();
-    }
-
-    public void addToBuffer(String data) {
-        dataBuffer.add(data);
     }
 }

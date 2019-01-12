@@ -15,6 +15,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import static java.nio.channels.SelectionKey.*;
@@ -82,8 +83,8 @@ public class TcpNioChatClient extends ChatClient {
 
     private void processRead() {
         try {
-            Message msg = Utils.deserialize(connection.take());
-            display.print(msg);
+            List<Message> messages = Utils.deserializeList(connection.take());
+            messages.forEach(display::print);
         } catch (IOException e) {
             LOGGER.error("Cannot read message", e);
             running.set(false);
