@@ -27,4 +27,8 @@ public class AuthUserStorage {
     public void removeUser(UUID clientId) {
         authUsers.remove(clientId);
     }
+
+    public Collection<String> getUsers() {
+        return authUsers.values();
+    }
 }

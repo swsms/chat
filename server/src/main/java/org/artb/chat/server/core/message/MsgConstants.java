@@ -29,6 +29,9 @@ public final class MsgConstants {
 
     public static final String SUCCESSFULLY_LOGGED_TEMPLATE =
             "Congratulations! You have successfully logged as %s. " +
-                    "Type /help to show a list of commands.";
+                    "Type /help to show the list of commands.";
+
+    public static final String LIST_OF_USERS_TEMPLATE =
+            "There is %d users currently connected to the chat:\n%s";
 
 }

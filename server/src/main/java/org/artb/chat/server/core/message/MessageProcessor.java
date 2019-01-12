@@ -5,6 +5,7 @@ import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
+import org.artb.chat.server.core.command.CommandParsingException;
 import org.artb.chat.server.core.storage.AuthUserStorage;
 import org.artb.chat.server.core.storage.HistoryStorage;
 import org.slf4j.Logger;
@@ -29,10 +30,10 @@ public class MessageProcessor implements Runnable {
     private final AtomicBoolean runningFlag;
 
     public MessageProcessor(HistoryStorage historyStorage,
-                                 MsgSender sender,
-                                 BlockingQueue<MessageArrivedEvent> events,
-                                 AuthUserStorage storage,
-                                 AtomicBoolean runningFlag) {
+                            MsgSender sender,
+                            BlockingQueue<MessageArrivedEvent> events,
+                            AuthUserStorage storage,
+                            AtomicBoolean runningFlag) {
 
         this.historyStorage = historyStorage;
         this.sender = sender;
@@ -70,9 +71,13 @@ public class MessageProcessor implements Runnable {
     }
 
     private void executeCommandForConnection(BufferedConnection connection, String content) {
-        CommandFactory factory = new CommandFactory(connection, sender);
-        Command command = factory.createCommand(content);
-        command.execute();
+        CommandFactory factory = new CommandFactory(connection, sender, userStorage);
+        try {
+            Command command = factory.createCommand(content);
+            command.execute();
+        } catch (CommandParsingException e) {
+            LOGGER.error("Cannot parse command", e);
+        }
     }
 
     private void broadcastProcessedMessage(UUID id, String text) {
