@@ -75,7 +75,8 @@ public class MessageProcessor implements Runnable {
             Command command = factory.createCommand(content);
             command.execute();
         } catch (CommandParsingException e) {
-            LOGGER.error("Cannot parse command", e);
+            LOGGER.warn("Cannot parse command: ", e.getMessage());
+            sender.send(connection.getId(), Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
         }
     }
 
