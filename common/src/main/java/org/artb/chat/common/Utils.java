@@ -1,17 +1,15 @@
 package org.artb.chat.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.artb.chat.common.message.Message;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -56,5 +54,12 @@ public final class Utils {
         return zdt.withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime()
                 .withNano(0);
+    }
+
+    public static <T> List<T> createNewListWithMessage(T msg, List<T> messages) {
+        List<T> temp = new ArrayList<>();
+        temp.add(msg);
+        temp.addAll(messages);
+        return temp;
     }
 }

@@ -12,8 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -102,14 +101,16 @@ public class MessageProcessor implements Runnable {
             userStorage.saveUser(clientId, userName);
 
             String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
-            sender.send(clientId, Message.newServerMessage(loggedText));
-
-            String readyText = String.format(READY_TO_CHATTING, userName);
-            sender.sendBroadcast(Message.newServerMessage(readyText));
+            Message loggedMsg = Message.newServerMessage(loggedText);
 
             List<Message> history = historyStorage.history();
             LOGGER.info("Sent history with size {} entries.", history.size());
-            sender.send(clientId, history);
+
+            List<Message> messagesForUser = Utils.createNewListWithMessage(loggedMsg, history);
+            sender.send(clientId, messagesForUser);
+
+            String readyText = String.format(READY_TO_CHATTING, userName);
+            sender.sendBroadcast(Message.newServerMessage(readyText));
         }
     }
 }
