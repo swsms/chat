@@ -6,6 +6,7 @@ import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
+import org.artb.chat.server.core.event.MessageArrivedEvent;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.artb.chat.server.core.storage.history.HistoryStorage;

@@ -6,7 +6,8 @@ import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
-import org.artb.chat.server.core.message.MessageArrivedEvent;
+import org.artb.chat.server.core.event.ConnectionEvent;
+import org.artb.chat.server.core.event.MessageArrivedEvent;
 import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.BasicMsgSender;
 import org.artb.chat.server.core.message.MsgSender;
@@ -43,7 +44,10 @@ public class ChatServer implements ChatComponent {
     private ServerSocketChannel serverSocket;
 
     private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    private final BlockingQueue<MessageArrivedEvent> events = new LinkedBlockingQueue<>();
+
+    private final BlockingQueue<MessageArrivedEvent> msgEvents = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ConnectionEvent> connectionEvents = new LinkedBlockingQueue<>();
+
     private final AuthUserStorage users = new AuthUserStorage();
     private final HistoryStorage history = new HistoryStorage(Constants.HISTORY_SIZE);
     private MsgSender sender = new BasicMsgSender(users, connections);
@@ -54,7 +58,7 @@ public class ChatServer implements ChatComponent {
         this.host = host;
         this.port = port;
         this.msgProcessor = new MessageProcessor(
-                history, sender, events, users, runningFlag);
+                history, sender, msgEvents, users, runningFlag);
     }
 
     public void start() {
@@ -144,7 +148,7 @@ public class ChatServer implements ChatComponent {
             clientSocket.configureBlocking(false);
             clientSocket.register(selector, OP_READ, connection);
         } catch (IOException e) {
-            LOGGER.error("Cannot register new client with id {}", clientId, e);
+            LOGGER.error("Cannot initialize socket for client {}", clientId, e);
             return;
         }
 
@@ -153,7 +157,7 @@ public class ChatServer implements ChatComponent {
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
-            LOGGER.info("New client {} accepted from {}", clientId, remoteAddress);
+            LOGGER.info("Registering new client {} from {}", clientId, remoteAddress);
         } catch (IOException e) {
             LOGGER.warn("Cannot get remote address for {}: {}", clientId, e.getMessage());
         }
@@ -164,7 +168,7 @@ public class ChatServer implements ChatComponent {
         try {
             Message msg = Utils.deserialize(connection.take());
             LOGGER.info("Incoming message: {}", msg);
-            events.add(new MessageArrivedEvent(connection.getId(), msg, connection));
+            msgEvents.add(new MessageArrivedEvent(connection.getId(), msg, connection));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }
