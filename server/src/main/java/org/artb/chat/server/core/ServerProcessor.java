@@ -17,7 +17,7 @@ public abstract class ServerProcessor {
 
     protected final AtomicBoolean runningFlag = new AtomicBoolean();
     protected final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    protected final BlockingQueue<MessageArrivedEvent> receivedDataQueue = new LinkedBlockingQueue<>();
+    protected final BlockingQueue<ReceivedData> receivedDataQueue = new LinkedBlockingQueue<>();
 
     public ServerProcessor(String host, int port) {
         this.host = host;
@@ -44,7 +44,7 @@ public abstract class ServerProcessor {
         return runningFlag;
     }
 
-    public BlockingQueue<MessageArrivedEvent> getReceivedDataQueue() {
+    public BlockingQueue<ReceivedData> getReceivedDataQueue() {
         return receivedDataQueue;
     }
 }

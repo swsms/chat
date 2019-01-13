@@ -32,7 +32,7 @@ public class ChatServer implements ChatComponent {
     public ChatServer(String host, int port) {
         this.server = new TcpNioServerProcessor(host, port);
         this.sender = new BasicMsgSender(userStorage, server.getConnections(), historyStorage);
-        this.msgProcessor =  new MessageProcessor(
+        this.msgProcessor = new MessageProcessor(
                 historyStorage, sender, server.getReceivedDataQueue(), userStorage, runningFlag);
     }
 

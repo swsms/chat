@@ -8,6 +8,7 @@ import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
 import org.artb.chat.server.core.event.ConnectionEvent;
 import org.artb.chat.server.core.event.MessageArrivedEvent;
+import org.artb.chat.server.core.event.ReceivedData;
 import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.BasicMsgSender;
 import org.artb.chat.server.core.message.MsgSender;
@@ -41,7 +42,7 @@ public class ChatServer implements ChatComponent {
     private final int port;
 
     private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    private final BlockingQueue<MessageArrivedEvent> msgEvents = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ReceivedData> msgEvents = new LinkedBlockingQueue<>();
 
     private final HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
     private final AuthUserStorage userStorage = new InMemoryAuthUserStorage();
@@ -165,9 +166,9 @@ public class ChatServer implements ChatComponent {
     private void read(SelectionKey key) {
         BufferedConnection connection = (BufferedConnection) key.attachment();
         try {
-            Message msg = Utils.deserialize(connection.take());
-            LOGGER.info("Incoming message: {}", msg);
-            msgEvents.add(new MessageArrivedEvent(connection.getId(), msg, connection));
+            String incomingData = connection.take();
+            LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
+            msgEvents.add(new ReceivedData(connection.getId(), incomingData, connection));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }

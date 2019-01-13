@@ -7,12 +7,14 @@ import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
 import org.artb.chat.server.core.event.MessageArrivedEvent;
+import org.artb.chat.server.core.event.ReceivedData;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -25,14 +27,14 @@ public class MessageProcessor implements Runnable {
 
     private final HistoryStorage historyStorage;
     private final MsgSender sender;
-    private final BlockingQueue<MessageArrivedEvent> events;
+    private final BlockingQueue<ReceivedData> events;
     private final AuthUserStorage userStorage;
 
     private final AtomicBoolean runningFlag;
 
     public MessageProcessor(HistoryStorage historyStorage,
                             MsgSender sender,
-                            BlockingQueue<MessageArrivedEvent> events,
+                            BlockingQueue<ReceivedData> events,
                             AuthUserStorage storage,
                             AtomicBoolean runningFlag) {
 
@@ -46,21 +48,28 @@ public class MessageProcessor implements Runnable {
     @Override
     public void run() {
         while (runningFlag.get()) {
-            final MessageArrivedEvent event;
+            final ReceivedData receivedData;
             try {
-                event = events.take();
+                receivedData = events.take();
             } catch (InterruptedException e) {
                 LOGGER.error("Cannot take a message from queue", e);
                 return;
             }
 
-            Message incomingMessage = event.getMessage();
-            UUID clientId = event.getClientId();
+            final Message incomingMessage;
+            try {
+                incomingMessage = Utils.deserialize(receivedData.getRawData());
+            } catch (IOException e) {
+                LOGGER.error("Cannot deserialize message: {}", receivedData.getRawData(), e);
+                return;
+            }
+
+            UUID clientId = receivedData.getClientId();
             String msgContent = incomingMessage.getContent().trim();
 
             if (userStorage.authenticated(clientId)) {
                 if (msgContent.startsWith(Command.CMD_CHAR)) {
-                    executeCommandForConnection(event.getConnection(), msgContent);
+                    executeCommandForConnection(receivedData.getConnection(), msgContent);
                 } else {
                     broadcastProcessedMessage(clientId, msgContent);
                 }

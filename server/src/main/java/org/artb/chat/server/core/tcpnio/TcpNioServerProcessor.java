@@ -146,7 +146,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         try {
             String incomingData = connection.take();
             LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
-            receivedDataQueue.add(new MessageArrivedEvent(connection.getId(), incomingData, connection));
+            receivedDataQueue.add(new ReceivedData(connection.getId(), incomingData, connection));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }
