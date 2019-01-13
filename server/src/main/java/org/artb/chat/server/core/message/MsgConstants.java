@@ -10,8 +10,8 @@ public final class MsgConstants {
     public static final String USER_ALONE_IN_CHAT_TEXT = "You are alone in the chat.";
     public static final String NO_PARAMETERS_FOR_COMMAND = "You did not specify parameter(s) for the command.";
 
-    public static final String LEFT_CHAT_TEMPLATE = "%s has left the chat";
-    public static final String READY_TO_CHATTING_TEMPLATE = "%s is ready to chatting.";
+    public static final String LEFT_CHAT_TEMPLATE = "User %s has left the chat.";
+    public static final String READY_TO_CHATTING_TEMPLATE = "User %s is ready to chatting.";
     public static final String USER_IS_RENAMED_TEMPLATE = "User %s is renamed to %s.";
     public static final String LIST_OF_USERS_TEMPLATE = "There is %d currently connected users:\n%s";
 

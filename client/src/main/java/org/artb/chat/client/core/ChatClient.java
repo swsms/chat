@@ -62,7 +62,7 @@ public abstract class ChatClient implements ChatComponent {
             if (connection != null) {
                 connection.close();
             }
-            display.print("Successfully disconnected. Press any key to exit the program.");
+            display.print("Successfully disconnected. Press any key to exit the client program.");
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
         }

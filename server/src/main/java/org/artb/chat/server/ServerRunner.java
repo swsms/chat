@@ -2,7 +2,6 @@ package org.artb.chat.server;
 
 import org.artb.chat.common.settings.Settings;
 import org.artb.chat.common.settings.SettingsParseException;
-import org.artb.chat.server.core.ChatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,9 +13,8 @@ public class ServerRunner {
     public static void main(String[] args) {
         try {
             Settings settings = Settings.fromArgsArray(args);
-            ChatServer server = new ChatServer(settings.getHost(), settings.getPort());
-            Thread serverThread = new Thread(server::start, "main-chat-thread");
-            serverThread.start();
+            ChatServer chat = new ChatServer(settings.getHost(), settings.getPort());
+            chat.start();
         } catch (SettingsParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
         } catch (Exception e) {

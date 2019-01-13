@@ -6,6 +6,8 @@ import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.ServerProcessor;
+import org.artb.chat.server.core.event.ConnectionEvent;
+import org.artb.chat.server.core.event.ConnectionEventType;
 import org.artb.chat.server.core.event.MessageArrivedEvent;
 import org.artb.chat.server.core.event.ReceivedData;
 import org.slf4j.Logger;
@@ -131,7 +133,6 @@ public class TcpNioServerProcessor extends ServerProcessor {
         }
 
         connections.putIfAbsent(clientId, connection);
-//        sender.sendPersonal(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
@@ -139,6 +140,10 @@ public class TcpNioServerProcessor extends ServerProcessor {
         } catch (IOException e) {
             LOGGER.warn("Cannot get remote address for {}: {}", clientId, e.getMessage());
         }
+
+        connectionEventListener.accept(new ConnectionEvent(
+                connection.getId(), connection, ConnectionEventType.CONNECTED
+        ));
     }
 
     private void read(SelectionKey key) {
@@ -167,15 +172,12 @@ public class TcpNioServerProcessor extends ServerProcessor {
             try {
                 connection.close();
                 LOGGER.info("Connection with {} was successfully closed.", id);
+                connectionEventListener.accept(new ConnectionEvent(
+                        connection.getId(), connection, ConnectionEventType.DISCONNECTED
+                ));
             } catch (IOException e) {
                 LOGGER.error("Cannot close connection", e);
             }
         }
-
-//        if (userStorage.authenticated(id)) {
-//            String user = userStorage.removeUser(id);
-//            String text = String.format(LEFT_CHAT_TEMPLATE, user);
-//            sender.sendBroadcast(Message.newServerMessage(text));
-//        }
     }
 }
