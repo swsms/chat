@@ -35,8 +35,7 @@ public final class MsgConstants {
             "There is %d currently connected users:\n%s";
 
     public static final String USER_ALONE_IN_CHAT_TEXT = "You are alone in the chat.";
-
     public static final String LEFT_CHAT_TEMPLATE = "%s has left the chat";
-
-    public static final String READY_TO_CHATTING = "%s is ready to chatting.";
+    public static final String READY_TO_CHATTING_TEMPLATE = "%s is ready to chatting.";
+    public static final String USER_IS_RENAMED_TEMPLATE = "User %s is renamed to %s.";
 }

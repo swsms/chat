@@ -6,8 +6,8 @@ import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
-import org.artb.chat.server.core.storage.AuthUserStorage;
-import org.artb.chat.server.core.storage.HistoryStorage;
+import org.artb.chat.server.core.storage.auth.AuthUserStorage;
+import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,7 +109,7 @@ public class MessageProcessor implements Runnable {
             List<Message> messagesForUser = Utils.createNewListWithMessage(loggedMsg, history);
             sender.send(clientId, messagesForUser);
 
-            String readyText = String.format(READY_TO_CHATTING, userName);
+            String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
             sender.sendBroadcast(Message.newServerMessage(readyText));
         }
     }

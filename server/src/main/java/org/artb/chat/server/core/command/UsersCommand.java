@@ -2,9 +2,8 @@ package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.message.MsgConstants;
 import org.artb.chat.server.core.message.MsgSender;
-import org.artb.chat.server.core.storage.AuthUserStorage;
+import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 
 import java.util.List;
 import java.util.stream.Collectors;

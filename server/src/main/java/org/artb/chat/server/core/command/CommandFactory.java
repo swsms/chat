@@ -2,7 +2,7 @@ package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.server.core.message.MsgSender;
-import org.artb.chat.server.core.storage.AuthUserStorage;
+import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 
 public class CommandFactory {
 
@@ -44,7 +44,8 @@ public class CommandFactory {
                 if (commandWithParams.length < 2) {
                     throw new CommandParsingException("No new name specified");
                 } else {
-                    return new RenameCommand(commandWithParams[1]);
+                    return new RenameCommand(commandWithParams[1],
+                            userStorage, connection, sender);
                 }
             case USERS:
                 return new UsersCommand(userStorage, connection, sender);

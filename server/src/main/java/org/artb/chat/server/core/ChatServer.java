@@ -10,8 +10,8 @@ import org.artb.chat.server.core.message.MessageArrivedEvent;
 import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.BasicMsgSender;
 import org.artb.chat.server.core.message.MsgSender;
-import org.artb.chat.server.core.storage.AuthUserStorage;
-import org.artb.chat.server.core.storage.HistoryStorage;
+import org.artb.chat.server.core.storage.auth.AuthUserStorage;
+import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

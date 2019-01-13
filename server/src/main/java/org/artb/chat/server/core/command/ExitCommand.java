@@ -3,7 +3,7 @@ package org.artb.chat.server.core.command;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.message.MsgSender;
-import org.artb.chat.server.core.storage.AuthUserStorage;
+import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
