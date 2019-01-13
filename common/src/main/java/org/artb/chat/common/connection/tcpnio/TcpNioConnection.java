@@ -76,7 +76,7 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (socket != null) {
             socket.close();
         }
@@ -85,9 +85,11 @@ public class TcpNioConnection implements Connection {
         }
     }
 
-    private void switchMode(int targetMode) {
+    private synchronized void switchMode(int targetMode) {
         SelectionKey key = socket.keyFor(selector);
-        key.interestOps(targetMode);
-        selector.wakeup();
+        if (key.isValid()) {
+            key.interestOps(targetMode);
+            selector.wakeup();
+        }
     }
 }

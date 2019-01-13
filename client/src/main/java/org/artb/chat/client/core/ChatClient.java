@@ -23,7 +23,7 @@ public abstract class ChatClient {
 
     protected final AtomicBoolean running = new AtomicBoolean();
     protected final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final MsgReader msgReader = new MsgReader(this::enqueueMessage, running);
+    private final MessageReader reader = new MessageReader(this::enqueueMessage, running);
 
     protected ChatClient(String serverHost, int serverPort) {
         this.serverHost = serverHost;
@@ -42,8 +42,8 @@ public abstract class ChatClient {
     public void start() {
         running.set(true);
 
-        Thread asyncMsgReader = new Thread(msgReader);
-        asyncMsgReader.start();
+        Thread asyncReader = new Thread(reader);
+        asyncReader.start();
 
         try {
             this.connection = configureConnection();
@@ -61,7 +61,7 @@ public abstract class ChatClient {
             if (connection != null) {
                 connection.close();
             }
-            LOGGER.info("Client successfully stopped");
+            display.print("Successfully disconnected. Press any key to exit the program.");
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
         }

@@ -86,7 +86,6 @@ public class TcpNioChatClient extends ChatClient {
             List<Message> messages = Utils.deserializeList(connection.take());
             messages.forEach(display::print);
         } catch (IOException e) {
-            LOGGER.error("Cannot read message", e);
             running.set(false);
         }
     }
@@ -97,7 +96,7 @@ public class TcpNioChatClient extends ChatClient {
             try {
                 connection.send(Utils.serialize(msg));
             } catch (IOException e) {
-                LOGGER.error("Cannot write message: {}", msg, e);
+                running.set(false);
             }
         }
     }
