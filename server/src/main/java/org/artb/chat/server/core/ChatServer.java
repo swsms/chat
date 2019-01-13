@@ -165,7 +165,6 @@ public class ChatServer {
             LOGGER.info("Incoming message: {}", msg);
             events.add(new MessageArrivedEvent(connection.getId(), msg, connection));
         } catch (IOException e) {
-            LOGGER.error("Cannot send message", e);
             closeConnection(connection.getId());
         }
     }
@@ -175,18 +174,16 @@ public class ChatServer {
         try {
             connection.sendPendingData();
         } catch (IOException e) {
-            LOGGER.error("Cannot send message to {}", connection.getId(), e);
             closeConnection(connection.getId());
         }
     }
 
     private void closeConnection(UUID id) {
-        LOGGER.info("Closing connection with {}", id);
-
         BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
+                LOGGER.info("Connection with {} was successfully closed.", id);
             } catch (IOException e) {
                 LOGGER.error("Cannot close connection", e);
             }
