@@ -41,7 +41,7 @@ public class RenameCommand implements Command {
             sender.sendBroadcast(Message.newServerMessage(text));
         } catch (InvalidNameException e) {
             LOGGER.info(e.getMessage());
-            sender.send(connection.getId(), Message.newServerMessage(e.getMessage()));
+            sender.sendPersonal(connection.getId(), Message.newServerMessage(e.getMessage()));
         }
     }
 }

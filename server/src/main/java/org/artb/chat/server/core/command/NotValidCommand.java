@@ -20,6 +20,6 @@ public class NotValidCommand implements Command {
     @Override
     public void execute() {
         String text = String.format(NOT_VALID_COMMAND_TEMPLATE, enteredContent);
-        sender.send(connection.getId(), Message.newServerMessage(text));
+        sender.sendPersonal(connection.getId(), Message.newServerMessage(text));
     }
 }

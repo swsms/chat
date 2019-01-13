@@ -48,7 +48,7 @@ public class ConnectionManager implements Runnable {
             switch (event.getType()) {
                 case CONNECTED:
                     connections.putIfAbsent(event.getClientId(), event.getConnection());
-                    sender.send(event.getClientId(), Message.newServerMessage(REQUEST_NAME_TEXT));
+                    sender.sendPersonal(event.getClientId(), Message.newServerMessage(REQUEST_NAME_TEXT));
                     break;
                 case DISCONNECTED:
 

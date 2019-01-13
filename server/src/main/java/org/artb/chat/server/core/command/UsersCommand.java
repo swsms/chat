@@ -32,6 +32,6 @@ public class UsersCommand implements Command {
                 String.format(LIST_OF_USERS_TEMPLATE, users.size(), String.join("\n", users)) :
                 USER_ALONE_IN_CHAT_TEXT;
 
-        sender.send(connection.getId(), Message.newServerMessage(text));
+        sender.sendPersonal(connection.getId(), Message.newServerMessage(text));
     }
 }

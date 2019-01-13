@@ -6,7 +6,6 @@ import org.artb.chat.server.core.message.MsgSender;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class HelpCommand implements Command {
@@ -25,6 +24,8 @@ public class HelpCommand implements Command {
                         .map(cmdType -> cmdType.getValue() + "\t" + cmdType.getDesc())
                         .collect(Collectors.toList());
 
-        sender.send(connection.getId(), Message.newServerMessage(String.join("\n", types)));
+        sender.sendPersonal(
+                connection.getId(),
+                Message.newServerMessage(String.join("\n", types)));
     }
 }

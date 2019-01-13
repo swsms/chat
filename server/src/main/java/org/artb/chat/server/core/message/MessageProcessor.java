@@ -78,7 +78,7 @@ public class MessageProcessor implements Runnable {
             command.execute();
         } catch (CommandParsingException e) {
             LOGGER.warn("Cannot parse command: ", e.getMessage());
-            sender.send(connection.getId(), Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
+            sender.sendPersonal(connection.getId(), Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
         }
     }
 
@@ -90,8 +90,6 @@ public class MessageProcessor implements Runnable {
         msg.setType(Message.Type.USER_TEXT);
         msg.setServed(ZonedDateTime.now());
 
-        historyStorage.add(msg);
-
         sender.sendBroadcast(msg);
     }
 
@@ -100,7 +98,7 @@ public class MessageProcessor implements Runnable {
             userStorage.upsertUserName(clientId, userName);
         } catch (InvalidNameException e) {
             LOGGER.info(e.getMessage());
-            sender.send(clientId, Message.newServerMessage(e.getMessage()));
+            sender.sendPersonal(clientId, Message.newServerMessage(e.getMessage()));
             return;
         }
 
@@ -111,7 +109,7 @@ public class MessageProcessor implements Runnable {
         LOGGER.info("Sent history with size {} entries.", history.size());
 
         List<Message> messagesForUser = Utils.createNewListWithMessage(loggedMsg, history);
-        sender.send(clientId, messagesForUser);
+        sender.sendPersonal(clientId, messagesForUser);
 
         String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
         sender.sendBroadcast(Message.newServerMessage(readyText));

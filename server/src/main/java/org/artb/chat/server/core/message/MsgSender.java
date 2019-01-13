@@ -15,10 +15,10 @@ public interface MsgSender {
     /**
      * Send a message to user
      */
-    void send(UUID targetId, Message msg);
+    void sendPersonal(UUID targetId, Message msg);
 
     /**
      * Send several messages to user
      */
-    void send(UUID targetId, List<Message> msgList);
+    void sendPersonal(UUID targetId, List<Message> msgList);
 }

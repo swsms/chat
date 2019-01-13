@@ -4,6 +4,7 @@ import org.artb.chat.common.Utils;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
+import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,11 +19,14 @@ public class BasicMsgSender implements MsgSender {
 
     private final AuthUserStorage userStorage;
     private final Map<UUID, BufferedConnection> connections;
+    private final HistoryStorage historyStorage;
 
     public BasicMsgSender(AuthUserStorage userStorage,
-                          Map<UUID, BufferedConnection> connections) {
+                          Map<UUID, BufferedConnection> connections,
+                          HistoryStorage historyStorage) {
         this.userStorage = userStorage;
         this.connections = connections;
+        this.historyStorage = historyStorage;
     }
 
     @Override
@@ -35,18 +39,19 @@ public class BasicMsgSender implements MsgSender {
                     connection.notification();
                 }
             });
+            historyStorage.add(msg);
         } catch (IOException e) {
             LOGGER.info("Cannot send message: {}", msg, e);
         }
     }
 
     @Override
-    public void send(UUID id, Message msg) {
-        send(id, Collections.singletonList(msg));
+    public void sendPersonal(UUID id, Message msg) {
+        sendPersonal(id, Collections.singletonList(msg));
     }
 
     @Override
-    public void send(UUID targetId, List<Message> msgList) {
+    public void sendPersonal(UUID targetId, List<Message> msgList) {
         BufferedConnection connection = connections.get(targetId);
         if (connection == null) {
             LOGGER.warn("No connection for id found: {}", targetId);

@@ -50,7 +50,7 @@ public class ChatServer implements ChatComponent {
 
     private final AuthUserStorage users = new AuthUserStorage();
     private final HistoryStorage history = new HistoryStorage(Constants.HISTORY_SIZE);
-    private MsgSender sender = new BasicMsgSender(users, connections);
+    private MsgSender sender = new BasicMsgSender(users, connections, history);
 
     private final MessageProcessor msgProcessor;
 
@@ -153,7 +153,7 @@ public class ChatServer implements ChatComponent {
         }
 
         connections.putIfAbsent(clientId, connection);
-        sender.send(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
+        sender.sendPersonal(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
