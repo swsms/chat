@@ -101,9 +101,11 @@ public class MessageProcessor implements Runnable {
         } else {
             userStorage.saveUser(clientId, userName);
 
-            String text = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
-            sender.send(clientId, Message.newServerMessage(text));
-            sender.sendBroadcast(Message.newServerMessage(userName + " is ready to chatting."));
+            String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
+            sender.send(clientId, Message.newServerMessage(loggedText));
+
+            String readyText = String.format(READY_TO_CHATTING, userName);
+            sender.sendBroadcast(Message.newServerMessage(readyText));
 
             List<Message> history = historyStorage.history();
             LOGGER.info("Sent history with size {} entries.", history.size());

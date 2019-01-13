@@ -36,4 +36,5 @@ public final class MsgConstants {
 
     public static final String LEFT_CHAT_TEMPLATE = "%s has left the chat";
 
+    public static final String READY_TO_CHATTING = "%s is ready to chatting.";
 }
