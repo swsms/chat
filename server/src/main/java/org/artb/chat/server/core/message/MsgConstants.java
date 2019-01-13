@@ -32,7 +32,9 @@ public final class MsgConstants {
                     "Type /help to show the list of commands.";
 
     public static final String LIST_OF_USERS_TEMPLATE =
-            "There is %d users currently connected to the chat:\n%s";
+            "There is %d currently connected users:\n%s";
+
+    public static final String USER_ALONE_IN_CHAT_TEXT = "You are alone in the chat.";
 
     public static final String LEFT_CHAT_TEMPLATE = "%s has left the chat";
 

@@ -29,8 +29,9 @@ public class UsersCommand implements Command {
                 storage.getUsers().stream()
                         .sorted().collect(Collectors.toList());
 
-        String text = String.format(
-                LIST_OF_USERS_TEMPLATE, users.size(), String.join("\n", users));
+        String text = users.size() != 1 ?
+                String.format(LIST_OF_USERS_TEMPLATE, users.size(), String.join("\n", users)) :
+                USER_ALONE_IN_CHAT_TEXT;
 
         sender.send(connection.getId(), Message.newServerMessage(text));
     }
