@@ -20,40 +20,31 @@ public class CommandFactory {
     }
 
     /**
-     * It creates a command according to the given line.
+     * It creates a command according to the given string content.
      *
-     * @param content the string representation of a command (with parameters)
+     * @param content the string representation of a command including parameters
      *
      * @return command or a special type DoNothingCommand
      */
     public Command createCommand(String content) throws CommandParsingException {
-        String[] lineParts = content.split("\\s+");
-        String command = lineParts[0];
+        String[] commandWithParams = content.split("\\s+");
 
-        CommandType[] types = CommandType.values();
+        CommandType type = CommandType.findCommandType(commandWithParams[0]);
 
-        CommandType foundCommand = null;
-        for (CommandType type : types) {
-            if (command.equalsIgnoreCase(type.getValue())) {
-                foundCommand = type;
-                break;
-            }
-        }
-
-        if (foundCommand == null) {
+        if (type == null) {
             return new NotValidCommand(content, connection, sender);
         }
 
-        switch (foundCommand) {
+        switch (type) {
             case HELP:
                 return new HelpCommand(connection, sender);
             case EXIT:
-                return new ExitCommand(connection, sender);
+                return new ExitCommand(userStorage, connection, sender);
             case RENAME:
-                if (lineParts.length < 2) {
+                if (commandWithParams.length < 2) {
                     throw new CommandParsingException("No new name specified");
                 } else {
-                    return new RenameCommand(lineParts[1]);
+                    return new RenameCommand(commandWithParams[1]);
                 }
             case USERS:
                 return new UsersCommand(userStorage, connection, sender);

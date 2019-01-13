@@ -4,6 +4,11 @@ import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.message.MsgSender;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 public class HelpCommand implements Command {
     private final BufferedConnection connection;
     private final MsgSender sender;
@@ -15,13 +20,11 @@ public class HelpCommand implements Command {
 
     @Override
     public void execute() {
-        StringBuilder builder = new StringBuilder();
+        List<String> types =
+                Arrays.stream(CommandType.values())
+                        .map(cmdType -> cmdType.getValue() + "\t" + cmdType.getDesc())
+                        .collect(Collectors.toList());
 
-        CommandType[] types = CommandType.values();
-        for (CommandType type : types) {
-            builder.append(type.getValue() + "\t" + type.getDesc() + "\n");
-        }
-
-        sender.send(connection.getId(), Message.newServerMessage(builder.toString()));
+        sender.send(connection.getId(), Message.newServerMessage(String.join("\n", types)));
     }
 }

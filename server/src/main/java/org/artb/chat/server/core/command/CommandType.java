@@ -21,4 +21,18 @@ public enum CommandType {
     public String getDesc() {
         return desc;
     }
+
+    public static CommandType findCommandType(String command) {
+        CommandType[] types = CommandType.values();
+
+        CommandType foundType = null;
+        for (CommandType type : types) {
+            if (command.equalsIgnoreCase(type.getValue())) {
+                foundType = type;
+                break;
+            }
+        }
+
+        return foundType;
+    }
 }
