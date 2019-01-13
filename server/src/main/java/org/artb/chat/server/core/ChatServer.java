@@ -1,5 +1,6 @@
 package org.artb.chat.server.core;
 
+import org.artb.chat.common.ChatComponent;
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
@@ -30,7 +31,7 @@ import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
 import static org.artb.chat.server.core.message.MsgConstants.*;
 
-public class ChatServer {
+public class ChatServer implements ChatComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
 
     private final String host;
@@ -85,7 +86,7 @@ public class ChatServer {
         LOGGER.info("The server has been stopped");
     }
 
-    private void stop() {
+    public void stop() {
         runningFlag.set(false);
         try {
             connections.keySet().forEach(this::closeConnection);

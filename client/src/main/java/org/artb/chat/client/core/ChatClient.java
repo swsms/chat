@@ -2,6 +2,7 @@ package org.artb.chat.client.core;
 
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
+import org.artb.chat.common.ChatComponent;
 import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.message.Message;
 import org.slf4j.Logger;
@@ -12,7 +13,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class ChatClient {
+public abstract class ChatClient implements ChatComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatClient.class);
 
     protected final String serverHost;
