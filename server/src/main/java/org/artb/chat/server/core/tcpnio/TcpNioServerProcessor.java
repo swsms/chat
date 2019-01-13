@@ -1,20 +1,13 @@
-package org.artb.chat.server.core;
+package org.artb.chat.server.core.tcpnio;
 
-import org.artb.chat.common.ChatComponent;
-import org.artb.chat.common.Constants;
+import org.artb.chat.common.Utils;
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.Utils;
-import org.artb.chat.server.core.event.ConnectionEvent;
+import org.artb.chat.server.core.ServerProcessor;
+import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.MessageArrivedEvent;
-import org.artb.chat.server.core.message.MessageProcessor;
-import org.artb.chat.server.core.message.BasicMsgSender;
-import org.artb.chat.server.core.message.MsgSender;
-import org.artb.chat.server.core.storage.auth.AuthUserStorage;
-import org.artb.chat.server.core.storage.auth.InMemoryAuthUserStorage;
-import org.artb.chat.server.core.storage.history.HistoryStorage;
-import org.artb.chat.server.core.storage.history.InMemoryHistoryStorage;
+import org.artb.chat.server.core.event.ReceivedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,77 +18,63 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
-import static org.artb.chat.server.core.message.MsgConstants.*;
 
-public class ChatServer implements ChatComponent {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
-
-    private final String host;
-    private final int port;
-
-    private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    private final BlockingQueue<MessageArrivedEvent> msgEvents = new LinkedBlockingQueue<>();
-
-    private final HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
-    private final AuthUserStorage userStorage = new InMemoryAuthUserStorage();
-    private MsgSender sender = new BasicMsgSender(userStorage, connections, historyStorage);
-
-    private volatile AtomicBoolean runningFlag = new AtomicBoolean();
-
-    private final MessageProcessor msgProcessor = new MessageProcessor(
-            historyStorage, sender, msgEvents, userStorage, runningFlag);
+public class TcpNioServerProcessor extends ServerProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TcpNioServerProcessor.class);
 
     private Selector selector;
     private ServerSocketChannel serverSocket;
 
-    public ChatServer(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public TcpNioServerProcessor(String host, int port) {
+        super(host, port);
     }
 
+    @Override
     public void start() {
-        runningFlag.set(true);
+        if (runningFlag.get()) {
+            LOGGER.warn("The server was already started. It will not be started again.");
+        } else {
+            runningFlag.set(true);
 
-        try {
-            configure();
-            LOGGER.info("Server started on {}:{}", host, port);
-        } catch (IOException e) {
-            LOGGER.error("Cannot start server on {}:{}", host, port, e);
-            runningFlag.set(false);
-        }
-
-        Thread asyncMsgProcessor = new Thread(msgProcessor, "msg-processor-thread");
-        asyncMsgProcessor.start();
-
-        try {
-            LOGGER.info("Starting process keys loop");
-            while (runningFlag.get()) {
-                processKeys();
+            try {
+                configure();
+                LOGGER.info("Server started on {}:{}", host, port);
+            } catch (IOException e) {
+                LOGGER.error("Cannot start server on {}:{}", host, port, e);
+                runningFlag.set(false);
             }
-        } catch (IOException e) {
-            LOGGER.error("An error occurs while keys processing", e);
-            runningFlag.set(false);
+
+            try {
+                LOGGER.info("Starting process keys loop");
+                while (runningFlag.get()) {
+                    processKeys();
+                }
+            } catch (IOException e) {
+                LOGGER.error("An error occurs while keys processing", e);
+                runningFlag.set(false);
+            }
+
+            stop();
+
+            LOGGER.info("The server has been stopped");
         }
-
-        stop();
-
-        LOGGER.info("The server has been stopped");
     }
 
+    @Override
     public void stop() {
-        runningFlag.set(false);
-        try {
-            connections.keySet().forEach(this::closeConnection);
-            serverSocket.close();
-        } catch (IOException e) {
-            LOGGER.error("Cannot close socket", e);
+        if (!runningFlag.get()) {
+            LOGGER.warn("The server is not started yet.");
+        } else {
+            runningFlag.set(false);
+            try {
+                connections.keySet().forEach(this::closeConnection);
+                serverSocket.close();
+            } catch (IOException e) {
+                LOGGER.error("Cannot close socket", e);
+            }
         }
     }
 
@@ -152,7 +131,7 @@ public class ChatServer implements ChatComponent {
         }
 
         connections.putIfAbsent(clientId, connection);
-        sender.sendPersonal(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
+//        sender.sendPersonal(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
@@ -165,9 +144,9 @@ public class ChatServer implements ChatComponent {
     private void read(SelectionKey key) {
         BufferedConnection connection = (BufferedConnection) key.attachment();
         try {
-            Message msg = Utils.deserialize(connection.take());
-            LOGGER.info("Incoming message: {}", msg);
-            msgEvents.add(new MessageArrivedEvent(connection.getId(), msg, connection));
+            String incomingData = connection.take();
+            LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
+            receivedDataQueue.add(new MessageArrivedEvent(connection.getId(), incomingData, connection));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }
@@ -193,10 +172,10 @@ public class ChatServer implements ChatComponent {
             }
         }
 
-        if (userStorage.authenticated(id)) {
-            String user = userStorage.removeUser(id);
-            String text = String.format(LEFT_CHAT_TEMPLATE, user);
-            sender.sendBroadcast(Message.newServerMessage(text));
-        }
+//        if (userStorage.authenticated(id)) {
+//            String user = userStorage.removeUser(id);
+//            String text = String.format(LEFT_CHAT_TEMPLATE, user);
+//            sender.sendBroadcast(Message.newServerMessage(text));
+//        }
     }
 }

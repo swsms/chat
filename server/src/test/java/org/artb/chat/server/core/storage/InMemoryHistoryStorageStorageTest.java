@@ -3,6 +3,7 @@ package org.artb.chat.server.core.storage;
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
+import org.artb.chat.server.core.storage.history.InMemoryHistoryStorage;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -13,11 +14,11 @@ import java.util.stream.Stream;
 
 import static org.testng.Assert.*;
 
-public class HistoryStorageTest {
+public class InMemoryHistoryStorageStorageTest {
 
     @Test
     public void testAddInSingleElementQueue() {
-        HistoryStorage storage = new HistoryStorage(1);
+        HistoryStorage storage = new InMemoryHistoryStorage(1);
 
         storage.add(Message.newUserMessage("Hello"));
 
@@ -34,7 +35,7 @@ public class HistoryStorageTest {
 
     @Test
     public void testAddInLargeQueue() {
-        HistoryStorage storage = new HistoryStorage(Constants.HISTORY_SIZE);
+        HistoryStorage storage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
 
         for (int i = 0; i < Constants.HISTORY_SIZE; i++) {
             storage.add(Message.newUserMessage("Hello" + i));
@@ -55,7 +56,7 @@ public class HistoryStorageTest {
 
     @Test
     public void testStorageConcurrently() throws InterruptedException {
-        HistoryStorage storage = new HistoryStorage(Constants.HISTORY_SIZE);
+        HistoryStorage storage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
 
         AtomicInteger counter = new AtomicInteger();
 
