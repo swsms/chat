@@ -12,10 +12,6 @@ public class AuthUserStorage {
     private ConcurrentHashMap<UUID, String> authUsers = new ConcurrentHashMap<>();
     private final Lock locker = new ReentrantLock();
 
-    public void saveUser(UUID clientId, String name) {
-        authUsers.putIfAbsent(clientId, name);
-    }
-
     public String getUserName(UUID clientId) {
         return authUsers.get(clientId);
     }
@@ -36,10 +32,9 @@ public class AuthUserStorage {
         return authUsers.values();
     }
 
-    // TODO move similar logic there
-    public void renameUser(UUID clientId, String newName) throws InvalidNameException {
+    public void upsertUserName(UUID clientId, String newName) throws InvalidNameException {
         if (Utils.isBlank(newName)) {
-            throw new InvalidNameException("The name should not be empty.");
+            throw new InvalidNameException("The name should not be empty, try another one.");
         }
 
         locker.lock();
@@ -47,7 +42,7 @@ public class AuthUserStorage {
             if (containsUserName(newName)) {
                 throw new InvalidNameException("The name " + newName + " is already in use, try another one.");
             }
-            String resultName = authUsers.computeIfPresent(clientId, (id, name) -> newName);
+            authUsers.put(clientId, newName);
         } finally {
             locker.unlock();
         }

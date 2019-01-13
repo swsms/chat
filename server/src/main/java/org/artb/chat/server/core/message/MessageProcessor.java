@@ -7,6 +7,7 @@ import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
+import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,24 +95,24 @@ public class MessageProcessor implements Runnable {
     }
 
     private void tryAuthenticate(UUID clientId, String userName) {
-        if (Utils.isBlank(userName)) {
-            sender.send(clientId, NAME_DECLINED_MSG);
-        } else if (userStorage.containsUserName(userName)) {
-            sender.send(clientId, NAME_ALREADY_IN_USE_MSG);
-        } else {
-            userStorage.saveUser(clientId, userName);
-
-            String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
-            Message loggedMsg = Message.newServerMessage(loggedText);
-
-            List<Message> history = historyStorage.history();
-            LOGGER.info("Sent history with size {} entries.", history.size());
-
-            List<Message> messagesForUser = Utils.createNewListWithMessage(loggedMsg, history);
-            sender.send(clientId, messagesForUser);
-
-            String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
-            sender.sendBroadcast(Message.newServerMessage(readyText));
+        try {
+            userStorage.upsertUserName(clientId, userName);
+        } catch (InvalidNameException e) {
+            LOGGER.info(e.getMessage());
+            sender.send(clientId, Message.newServerMessage(e.getMessage()));
+            return;
         }
+
+        String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
+        Message loggedMsg = Message.newServerMessage(loggedText);
+
+        List<Message> history = historyStorage.history();
+        LOGGER.info("Sent history with size {} entries.", history.size());
+
+        List<Message> messagesForUser = Utils.createNewListWithMessage(loggedMsg, history);
+        sender.send(clientId, messagesForUser);
+
+        String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
+        sender.sendBroadcast(Message.newServerMessage(readyText));
     }
 }

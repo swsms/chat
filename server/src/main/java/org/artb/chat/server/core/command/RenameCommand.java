@@ -8,7 +8,6 @@ import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.artb.chat.server.core.message.MsgConstants.LEFT_CHAT_TEMPLATE;
 import static org.artb.chat.server.core.message.MsgConstants.USER_IS_RENAMED_TEMPLATE;
 
 // TODO this command needs sync
@@ -36,7 +35,7 @@ public class RenameCommand implements Command {
     public void execute() {
         try {
             String oldName = storage.getUserName(connection.getId());
-            storage.renameUser(connection.getId(), newName);
+            storage.upsertUserName(connection.getId(), newName);
 
             String text = String.format(USER_IS_RENAMED_TEMPLATE, oldName, newName);
             sender.sendBroadcast(Message.newServerMessage(text));

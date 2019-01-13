@@ -149,7 +149,7 @@ public class ChatServer implements ChatComponent {
         }
 
         connections.putIfAbsent(clientId, connection);
-        sender.send(clientId, REQUEST_NAME_MSG);
+        sender.send(clientId, Message.newServerMessage(REQUEST_NAME_TEXT));
 
         try {
             String remoteAddress = Objects.toString(clientSocket.getRemoteAddress());
