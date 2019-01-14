@@ -11,7 +11,7 @@ A username is unique and set during authentication. It can be changed using the 
 - The chat contains client and server as two separated JAR files which can run independently on different machines.
 - All clients and a server interacts through TCP sockets.
 - The server is implemented in a non-blocking way. It has a single thread that accepts connections, receives and sends data, and several threads that process input messages and commands.
-- Both the client and the server have extensible architecture, and the transport layer can be replaced without changing the core business logic.
+- Both the client and the server have extensible architecture. The transport layer can be replaced without changing the core business logic.
 - All data is stored in RAM.
 - The project is built by Maven. Java 8+ is required.
 
@@ -33,4 +33,21 @@ It is also possible to specify host or/and port for both clients and servers usi
 ```
 java -jar <path-to-project>/server/target/chat-server-*.jar -host 0.0.0.0 -port 20001
 java -jar <path-to-project>/client/target/chat-client-*.jar -host 0.0.0.0 -port 20001
+```
+
+## A chatting example
+```
+Welcome to the chat! Please, enter a name to start chatting.
+Paul
+Congratulations! You have successfully logged as Paul. Type /help to show the list of commands.
+User Paul is ready to chatting.
+Hello, is here anyone?
+[2019-01-15 01:43:35] Paul: Hello, is here anyone?
+[2019-01-15 01:43:51] Katie: Yes, i'm here. What do you want to do here??
+I want to chat more.
+[2019-01-15 01:44:28] Paul: I want to chat more.
+[2019-01-15 01:44:54] Katie: But not me.
+User Katie has left the chat.
+/users
+You are alone in the chat.
 ```
