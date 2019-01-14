@@ -161,7 +161,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
     private void write(SelectionKey key) {
         BufferedConnection connection = (BufferedConnection) key.attachment();
         try {
-            connection.sendPendingData();
+            connection.flush();
         } catch (IOException e) {
             closeConnection(connection.getId());
         }

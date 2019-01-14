@@ -29,7 +29,7 @@ public class ConnectionDataConsumer implements DataConsumer<String> {
     public void consume(UUID userId, List<String> dataList) {
         BufferedConnection connection = connections.get(userId);
         dataList.forEach((dataItem) -> {
-            connection.addToBuffer(dataItem);
+            connection.putInBuffer(dataItem);
             connection.notification();
         });
     }

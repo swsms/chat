@@ -101,7 +101,7 @@ public class TcpNioChatClient extends ChatClient {
 
     private void processWrite() {
         try {
-            connection.sendPendingData();
+            connection.flush();
         } catch (IOException e) {
             running.set(false);
         }

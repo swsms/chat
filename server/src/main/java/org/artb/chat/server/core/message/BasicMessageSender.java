@@ -36,7 +36,7 @@ public class BasicMessageSender implements MessageSender {
             String jsonMsg = Utils.serialize(msg);
             userStorage.getUsers().forEach((id, name) -> {
                 BufferedConnection connection = connections.get(id);
-                connection.addToBuffer(jsonMsg);
+                connection.putInBuffer(jsonMsg);
                 connection.notification();
             });
             historyStorage.add(msg);
@@ -59,7 +59,7 @@ public class BasicMessageSender implements MessageSender {
             msgList.forEach(msg -> {
                 try {
                     String jsonMsg = Utils.serialize(msg);
-                    connection.addToBuffer(jsonMsg);
+                    connection.putInBuffer(jsonMsg);
                 } catch (IOException e) {
                     LOGGER.error("Cannot send message: {} to {}", msg, targetId);
                 }

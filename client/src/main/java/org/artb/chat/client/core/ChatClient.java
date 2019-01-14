@@ -45,7 +45,7 @@ public abstract class ChatClient implements ChatComponent {
     private void send(Message msg) {
         try {
             String data = Utils.serialize(msg);
-            connection.addToBuffer(data);
+            connection.putInBuffer(data);
             connection.notification();
         } catch (IOException e) {
             LOGGER.error("Cannot serialize msg: {}", msg, e);

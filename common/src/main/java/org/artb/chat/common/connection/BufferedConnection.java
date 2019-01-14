@@ -1,5 +1,6 @@
 package org.artb.chat.common.connection;
 
+import org.artb.chat.common.Identifiable;
 import org.artb.chat.common.Utils;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Just wrap a single connection with a buffer
  */
-public class BufferedConnection extends IdentifiableConnection {
+public class BufferedConnection extends Identifiable implements Connection, HasBuffer {
 
     private final Connection connection;
     private final Queue<String> dataBuffer = new ConcurrentLinkedQueue<>();
@@ -22,7 +23,7 @@ public class BufferedConnection extends IdentifiableConnection {
         this.connection = connection;
     }
 
-    public void sendPendingData() throws IOException {
+    public void flush() throws IOException {
         String next;
         List<String> messages = new ArrayList<>();
         while ((next = dataBuffer.poll()) != null) {
@@ -31,7 +32,8 @@ public class BufferedConnection extends IdentifiableConnection {
         connection.send(Utils.createBatch(messages));
     }
 
-    public void addToBuffer(String data) {
+    @Override
+    public void putInBuffer(String data) {
         dataBuffer.add(data);
     }
 
