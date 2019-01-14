@@ -1,4 +1,4 @@
-# Chat Application
+# Chat application
 
 ## Description
 In this console chat, all users are in the same space and can see each other's messages. The users can also send commands to the server and get the results. 
@@ -15,3 +15,22 @@ A username is unique and set during authentication. It can be changed using the 
 - All data is stored in RAM.
 - The project is built by Maven. Java 8+ is required.
 
+## Building and running
+
+- **Build artifacts** (server, client and other modules).
+```
+mvn clean package
+```
+- **Running server** (it will use the port 8999 on the localhost)
+```
+java -jar <path-to-project>/server/target/chat-server-*.jar
+```
+- **Running client** (it will try to connect to the port 8999 on the localhost).
+```
+java -jar <path-to-project>/client/target/chat-client-*.jar
+```
+It is also possible to specify host or/and port for both clients and servers using **-host** and **-port**:
+```
+java -jar <path-to-project>/server/target/chat-server-*.jar -host 0.0.0.0 -port 20001
+java -jar <path-to-project>/client/target/chat-client-*.jar -host 0.0.0.0 -port 20001
+```
