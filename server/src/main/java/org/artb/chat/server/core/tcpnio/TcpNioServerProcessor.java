@@ -1,14 +1,11 @@
 package org.artb.chat.server.core.tcpnio;
 
-import org.artb.chat.common.Utils;
 import org.artb.chat.common.connection.BufferedConnection;
+import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
-import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.ConnectionEvent;
 import org.artb.chat.server.core.event.ConnectionEventType;
-import org.artb.chat.server.core.event.MessageArrivedEvent;
 import org.artb.chat.server.core.event.ReceivedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +17,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -30,8 +28,19 @@ public class TcpNioServerProcessor extends ServerProcessor {
     private Selector selector;
     private ServerSocketChannel serverSocket;
 
+    private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
+
     public TcpNioServerProcessor(String host, int port) {
         super(host, port);
+    }
+
+    private void configure() throws IOException {
+        selector = Selector.open();
+        serverSocket = ServerSocketChannel.open();
+
+        serverSocket.bind(new InetSocketAddress(host, port));
+        serverSocket.configureBlocking(false);
+        serverSocket.register(selector, OP_ACCEPT);
     }
 
     @Override
@@ -80,17 +89,12 @@ public class TcpNioServerProcessor extends ServerProcessor {
         }
     }
 
-    private void configure() throws IOException {
-        selector = Selector.open();
-        serverSocket = ServerSocketChannel.open();
-
-        serverSocket.bind(new InetSocketAddress(host, port));
-        serverSocket.configureBlocking(false);
-        serverSocket.register(selector, OP_ACCEPT);
-    }
-
     private void processKeys() throws IOException {
+        int switched = switchKeyInterestOps();
+        LOGGER.info("Switched keys count: {}", switched);
+
         int numKeys = selector.select();
+        LOGGER.info("Selected keys number: {}", numKeys);
 
         if (numKeys > 0) {
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -123,7 +127,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
             connection = new BufferedConnection(
-                    clientId, new TcpNioConnection(selector, clientSocket));
+                    clientId, new TcpNioConnection(selector, clientSocket, switchTasks));
 
             clientSocket.configureBlocking(false);
             clientSocket.register(selector, OP_READ, connection);
@@ -151,7 +155,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         try {
             String incomingData = connection.take();
             LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
-            receivedDataQueue.add(new ReceivedData(connection.getId(), incomingData, connection));
+            receivedDataListener.accept(new ReceivedData(connection.getId(), incomingData, connection));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }
@@ -179,5 +183,18 @@ public class TcpNioServerProcessor extends ServerProcessor {
                 LOGGER.error("Cannot close connection", e);
             }
         }
+    }
+
+    private int switchKeyInterestOps() {
+        SwitchKeyInterestOpsTask task;
+        int switchedCount = 0;
+        while ((task = switchTasks.poll()) != null) {
+            SelectionKey key = task.getKey();
+            if (key != null && key.isValid()) {
+                key.interestOps(task.getOps());
+                switchedCount++;
+            }
+        }
+        return switchedCount;
     }
 }

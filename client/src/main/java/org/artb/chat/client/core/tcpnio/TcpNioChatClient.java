@@ -3,6 +3,7 @@ package org.artb.chat.client.core.tcpnio;
 import org.artb.chat.client.core.ChatClient;
 import org.artb.chat.client.core.ClientException;
 import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.Utils;
@@ -16,13 +17,16 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.nio.channels.SelectionKey.*;
 
 public class TcpNioChatClient extends ChatClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatClient.class);
     private Selector selector;
+    private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
 
     public TcpNioChatClient(String serverHost, int serverPort) {
         super(serverHost, serverPort);
@@ -39,7 +43,7 @@ public class TcpNioChatClient extends ChatClient {
             socket.connect(new InetSocketAddress(serverHost, serverPort));
             socket.register(selector, OP_CONNECT);
 
-            return new TcpNioConnection(selector, socket);
+            return new TcpNioConnection(selector, socket, switchTasks);
         } catch (IOException e) {
             LOGGER.info("Cannot configure client", e);
             throw new ClientException(e);
@@ -49,6 +53,7 @@ public class TcpNioChatClient extends ChatClient {
     @Override
     protected void doMainLogic() throws ClientException {
         while(running.get()) {
+            switchKeyInterestOps();
             int numKeys;
             try {
                 numKeys = selector.select();
@@ -113,5 +118,18 @@ public class TcpNioChatClient extends ChatClient {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
             running.set(false);
         }
+    }
+
+    private int switchKeyInterestOps() {
+        SwitchKeyInterestOpsTask task;
+        int switchedCount = 0;
+        while ((task = switchTasks.poll()) != null) {
+            SelectionKey key = task.getKey();
+            if (key != null && key.isValid()) {
+                key.interestOps(task.getOps());
+                switchedCount++;
+            }
+        }
+        return switchedCount;
     }
 }

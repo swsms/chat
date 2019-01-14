@@ -6,9 +6,7 @@ import org.artb.chat.server.core.event.ReceivedData;
 
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -18,12 +16,10 @@ public abstract class ServerProcessor {
 
     protected final AtomicBoolean runningFlag = new AtomicBoolean();
     protected final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
-    protected final BlockingQueue<ReceivedData> receivedDataQueue = new LinkedBlockingQueue<>();
 
-    /**
-     * Default connection event listener just omit all
-     */
+    /* (something) -> { } is a function for default listeners to avoid nulls */
     protected Consumer<ConnectionEvent> connectionEventListener = (event) -> { };
+    protected Consumer<ReceivedData> receivedDataListener = (data) -> { };
 
     public ServerProcessor(String host, int port) {
         this.host = host;
@@ -50,8 +46,8 @@ public abstract class ServerProcessor {
         return runningFlag;
     }
 
-    public BlockingQueue<ReceivedData> getReceivedDataQueue() {
-        return receivedDataQueue;
+    public void setReceivedDataListener(Consumer<ReceivedData> receivedDataListener) {
+        this.receivedDataListener = receivedDataListener;
     }
 
     public void setConnectionEventListener(Consumer<ConnectionEvent> listener) {

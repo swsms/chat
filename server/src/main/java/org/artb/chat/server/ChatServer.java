@@ -5,6 +5,7 @@ import org.artb.chat.common.Constants;
 import org.artb.chat.server.core.ConnectionManager;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.ConnectionEvent;
+import org.artb.chat.server.core.event.ReceivedData;
 import org.artb.chat.server.core.message.BasicMessageSender;
 import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.MessageSender;
@@ -33,7 +34,9 @@ public class ChatServer implements ChatComponent {
 
     private final AtomicBoolean runningFlag = new AtomicBoolean();
 
-    private final BlockingQueue<ConnectionEvent> connectionEvents = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ConnectionEvent> connectionEventsQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ReceivedData> receivedDataQueue = new LinkedBlockingQueue<>();
+
     private final ConnectionManager manager;
 
     public ChatServer(String host, int port) {
@@ -41,9 +44,9 @@ public class ChatServer implements ChatComponent {
         this.sender = new BasicMessageSender(userStorage, server.getConnections(), historyStorage);
 
         this.msgProcessor = new MessageProcessor(
-                historyStorage, sender, server.getReceivedDataQueue(), userStorage, runningFlag);
+                historyStorage, sender, receivedDataQueue, userStorage, runningFlag);
 
-        this.manager = new ConnectionManager(connectionEvents, runningFlag, sender, userStorage);
+        this.manager = new ConnectionManager(connectionEventsQueue, runningFlag, sender, userStorage);
     }
 
     @Override
@@ -56,7 +59,8 @@ public class ChatServer implements ChatComponent {
         Thread connectionManager = new Thread(manager, "connection-manager-thread");
         connectionManager.start();
 
-        server.setConnectionEventListener(connectionEvents::add);
+        server.setConnectionEventListener(connectionEventsQueue::add);
+        server.setReceivedDataListener(receivedDataQueue::add);
 
         Thread serverThread = new Thread(server::start, "main-server-thread");
         serverThread.start();

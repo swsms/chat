@@ -10,6 +10,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Queue;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -21,16 +22,20 @@ public class TcpNioConnection implements Connection {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
     private final Charset charset = StandardCharsets.UTF_8;
+    private final Queue<SwitchKeyInterestOpsTask> switchTasks;
 
-    public TcpNioConnection(Selector selector, SocketChannel socket) {
+    public TcpNioConnection(Selector selector,
+                            SocketChannel socket,
+                            Queue<SwitchKeyInterestOpsTask> switchTasks) {
         this.selector = selector;
         this.socket = socket;
+        this.switchTasks = switchTasks;
     }
 
     @Override
     public boolean connect() throws IOException {
         if (socket.finishConnect()) {
-            SelectionKey key = socket.keyFor(selector);
+            SelectionKey key = getSelectionKey();
             key.interestOps(OP_READ);
             return true;
         } else {
@@ -44,7 +49,8 @@ public class TcpNioConnection implements Connection {
         if (socket.write(buf) < 0) {
             throw new IOException("Cannot write data to channel");
         }
-        switchMode(OP_READ);
+        switchTasks.add(new SwitchKeyInterestOpsTask(getSelectionKey(), OP_READ));
+        selector.wakeup();
     }
 
     @Override
@@ -70,23 +76,31 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public void notification() {
-        switchMode(OP_WRITE);
+        SelectionKey key = getSelectionKey();
+        if (key.interestOps() == OP_READ) {
+            switchTasks.add(new SwitchKeyInterestOpsTask(key, OP_WRITE));
+            selector.wakeup();
+        }
     }
 
     @Override
-    public synchronized void close() throws IOException {
-        SelectionKey key = socket.keyFor(selector);
+    public void close() throws IOException {
+        SelectionKey key = getSelectionKey();
         if (key != null) {
             key.cancel();
         }
         socket.close();
     }
 
-    private synchronized void switchMode(int targetMode) {
-        SelectionKey key = socket.keyFor(selector);
-        if (key.isValid()) {
-            key.interestOps(targetMode);
-            selector.wakeup();
-        }
+    private SelectionKey getSelectionKey() {
+        return socket.keyFor(selector);
     }
+
+//    private synchronized void switchMode(int targetMode) {
+//        SelectionKey key = socket.keyFor(selector);
+//        if (key.isValid()) {
+//            key.interestOps(targetMode);
+//            selector.wakeup();
+//        }
+//    }
 }
