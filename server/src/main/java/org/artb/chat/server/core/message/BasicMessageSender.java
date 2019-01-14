@@ -33,11 +33,10 @@ public class BasicMessageSender implements MessageSender {
     public void sendBroadcast(Message msg) {
         try {
             String jsonMsg = Utils.serialize(msg);
-            connections.forEach((id, connection) -> {
-                if (userStorage.authenticated(id)) {
-                    connection.addToBuffer(jsonMsg);
-                    connection.notification();
-                }
+            userStorage.getUsers().forEach((id, name) -> {
+                BufferedConnection connection = connections.get(id);
+                connection.addToBuffer(jsonMsg);
+                connection.notification();
             });
             historyStorage.add(msg);
         } catch (IOException e) {

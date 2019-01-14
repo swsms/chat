@@ -9,6 +9,9 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * Just wrap a single connection with a buffer
+ */
 public class BufferedConnection extends IdentifiableConnection {
 
     private final Connection connection;
@@ -42,6 +45,7 @@ public class BufferedConnection extends IdentifiableConnection {
         return connection.take();
     }
 
+    @Override
     public void notification() {
         connection.notification();
     }

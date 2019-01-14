@@ -25,11 +25,13 @@ public class UsersCommand implements Command {
     @Override
     public void execute() {
         List<String> users =
-                storage.getUsers().stream()
+                storage.getUsers().values().stream()
                         .sorted().collect(Collectors.toList());
 
+        String joinedUsers = String.join("\n", users);
+
         String text = users.size() != 1 ?
-                String.format(LIST_OF_USERS_TEMPLATE, users.size(), String.join("\n", users)) :
+                String.format(LIST_OF_USERS_TEMPLATE, users.size(), joinedUsers) :
                 USER_ALONE_IN_CHAT_TEXT;
 
         sender.sendPersonal(connection.getId(), Message.newServerMessage(text));

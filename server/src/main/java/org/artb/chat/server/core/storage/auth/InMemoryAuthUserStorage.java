@@ -28,8 +28,8 @@ public class InMemoryAuthUserStorage implements AuthUserStorage {
         return authUsers.remove(clientId);
     }
 
-    public Collection<String> getUsers() {
-        return authUsers.values();
+    public Map<UUID, String> getUsers() {
+        return Collections.unmodifiableMap(authUsers);
     }
 
     public void upsertUserName(UUID clientId, String newName) throws InvalidNameException {

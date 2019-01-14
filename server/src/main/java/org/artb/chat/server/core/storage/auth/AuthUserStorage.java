@@ -1,6 +1,6 @@
 package org.artb.chat.server.core.storage.auth;
 
-import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 
 public interface AuthUserStorage {
@@ -13,7 +13,7 @@ public interface AuthUserStorage {
 
     String removeUser(UUID clientId);
 
-    Collection<String> getUsers();
+    Map<UUID, String> getUsers();
 
     void upsertUserName(UUID clientId, String newName) throws InvalidNameException;
 }
