@@ -93,12 +93,4 @@ public class TcpNioConnection implements Connection {
     private SelectionKey getSelectionKey() {
         return socket.keyFor(selector);
     }
-
-//    private synchronized void switchMode(int targetMode) {
-//        SelectionKey key = socket.keyFor(selector);
-//        if (key.isValid()) {
-//            key.interestOps(targetMode);
-//            selector.wakeup();
-//        }
-//    }
 }

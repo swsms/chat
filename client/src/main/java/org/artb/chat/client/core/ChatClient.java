@@ -3,14 +3,16 @@ package org.artb.chat.client.core;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.ChatComponent;
+import org.artb.chat.common.Utils;
+import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.io.InputStream;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class ChatClient implements ChatComponent {
@@ -19,35 +21,47 @@ public abstract class ChatClient implements ChatComponent {
     protected final String serverHost;
     protected final int serverPort;
 
-    protected Connection connection;
+    protected BufferedConnection connection;
     protected final UIDisplay display = new UIConsoleDisplay();
 
     protected final AtomicBoolean running = new AtomicBoolean();
-    protected final Queue<Message> messages = new ConcurrentLinkedQueue<>();
-    private final MessageReader reader = new MessageReader(this::enqueueMessage, running);
+    private MessageReader reader;
+    private final InputStream input;
 
     protected ChatClient(String serverHost, int serverPort) {
+        this(serverHost, serverPort, System.in);
+    }
+
+    protected ChatClient(String serverHost, int serverPort, InputStream input) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
+        this.input = input;
     }
 
-    private void enqueueMessage(Message msg) {
-        messages.add(msg);
-        connection.notification();
-    }
-
-    protected abstract Connection configureConnection() throws ClientException;
+    protected abstract BufferedConnection configureConnection() throws ClientException;
 
     protected abstract void doMainLogic() throws ClientException;
+
+    private void send(Message msg) {
+        try {
+            String data = Utils.serialize(msg);
+            connection.addToBuffer(data);
+            connection.notification();
+        } catch (IOException e) {
+            LOGGER.error("Cannot serialize msg: {}", msg, e);
+        }
+    }
 
     public void start() {
         running.set(true);
 
-        Thread asyncReader = new Thread(reader);
-        asyncReader.start();
-
         try {
             this.connection = configureConnection();
+
+            this.reader = new MessageReader(this::send, input, running);
+            Thread asyncReader = new Thread(reader);
+            asyncReader.start();
+
             doMainLogic();
         } catch (ClientException e) {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);

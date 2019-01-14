@@ -55,26 +55,28 @@ public class MessageProcessor implements Runnable {
                 return;
             }
 
-            final Message incomingMessage;
+            final List<Message> incomingMessages;
             try {
-                incomingMessage = Utils.deserialize(receivedData.getRawData());
+                incomingMessages = Utils.deserializeList(receivedData.getRawData());
             } catch (IOException e) {
                 LOGGER.error("Cannot deserialize message: {}", receivedData.getRawData(), e);
                 return;
             }
 
-            UUID clientId = receivedData.getClientId();
-            String msgContent = incomingMessage.getContent().trim();
+            incomingMessages.forEach((msg) -> {
+                UUID clientId = receivedData.getClientId();
+                String msgContent = msg.getContent().trim();
 
-            if (userStorage.authenticated(clientId)) {
-                if (msgContent.startsWith(Command.CMD_CHAR)) {
-                    executeCommandForConnection(receivedData.getConnection(), msgContent);
+                if (userStorage.authenticated(clientId)) {
+                    if (msgContent.startsWith(Command.CMD_CHAR)) {
+                        executeCommandForConnection(receivedData.getConnection(), msgContent);
+                    } else {
+                        broadcastProcessedMessage(clientId, msgContent);
+                    }
                 } else {
-                    broadcastProcessedMessage(clientId, msgContent);
+                    tryAuthenticate(clientId, msgContent);
                 }
-            } else {
-                tryAuthenticate(clientId, msgContent);
-            }
+            });
         }
         LOGGER.info("Successfully stopped");
     }

@@ -2,7 +2,7 @@ package org.artb.chat.client.core.tcpnio;
 
 import org.artb.chat.client.core.ChatClient;
 import org.artb.chat.client.core.ClientException;
-import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.common.message.Message;
@@ -11,14 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.nio.channels.SelectionKey.*;
@@ -32,8 +30,12 @@ public class TcpNioChatClient extends ChatClient {
         super(serverHost, serverPort);
     }
 
+    public TcpNioChatClient(String serverHost, int serverPort, InputStream input) {
+        super(serverHost, serverPort, input);
+    }
+
     @Override
-    protected Connection configureConnection() throws ClientException {
+    protected BufferedConnection configureConnection() throws ClientException {
         try {
             selector = Selector.open();
 
@@ -43,7 +45,9 @@ public class TcpNioChatClient extends ChatClient {
             socket.connect(new InetSocketAddress(serverHost, serverPort));
             socket.register(selector, OP_CONNECT);
 
-            return new TcpNioConnection(selector, socket, switchTasks);
+            return new BufferedConnection(
+                    UUID.randomUUID(),
+                    new TcpNioConnection(selector, socket, switchTasks));
         } catch (IOException e) {
             LOGGER.info("Cannot configure client", e);
             throw new ClientException(e);
@@ -96,13 +100,10 @@ public class TcpNioChatClient extends ChatClient {
     }
 
     private void processWrite() {
-        while (!messages.isEmpty()) {
-            Message msg = messages.poll();
-            try {
-                connection.send(Utils.serialize(msg));
-            } catch (IOException e) {
-                running.set(false);
-            }
+        try {
+            connection.sendPendingData();
+        } catch (IOException e) {
+            running.set(false);
         }
     }
 
