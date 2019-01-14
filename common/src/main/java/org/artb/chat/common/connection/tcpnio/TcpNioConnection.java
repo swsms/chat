@@ -50,7 +50,6 @@ public class TcpNioConnection implements Connection {
             throw new IOException("Cannot write data to channel");
         }
         switchTasks.add(new SwitchKeyInterestOpsTask(getSelectionKey(), OP_READ));
-        selector.wakeup();
     }
 
     @Override
