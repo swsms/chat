@@ -2,7 +2,6 @@ package org.artb.chat.common.connection.tcpnio;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.connection.Connection;
-import org.artb.chat.common.message.Message;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,7 +18,6 @@ public class TcpNioConnection implements Connection {
 
     private final Selector selector;
     private final SocketChannel socket;
-    private final SelectionKey key;
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
     private final Charset charset = StandardCharsets.UTF_8;
@@ -27,12 +25,12 @@ public class TcpNioConnection implements Connection {
     public TcpNioConnection(Selector selector, SocketChannel socket) {
         this.selector = selector;
         this.socket = socket;
-        this.key = socket.keyFor(selector);
     }
 
     @Override
     public boolean connect() throws IOException {
         if (socket.finishConnect()) {
+            SelectionKey key = socket.keyFor(selector);
             key.interestOps(OP_READ);
             return true;
         } else {
@@ -77,12 +75,11 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public synchronized void close() throws IOException {
-        if (socket != null) {
-            socket.close();
-        }
+        SelectionKey key = socket.keyFor(selector);
         if (key != null) {
             key.cancel();
         }
+        socket.close();
     }
 
     private synchronized void switchMode(int targetMode) {

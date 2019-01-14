@@ -34,7 +34,9 @@ public final class Utils {
     }
 
     public static List<Message> deserializeList(String json) throws IOException {
-        return Arrays.asList(objectMapper.readValue(json, Message[].class));
+        return Arrays.asList(objectMapper.readValue(
+                json.replaceAll("\\]\\[", ","),
+                Message[].class));
     }
 
     public static String createBatch(List<String> jsons) {

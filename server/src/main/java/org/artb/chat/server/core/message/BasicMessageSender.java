@@ -29,6 +29,7 @@ public class BasicMessageSender implements MessageSender {
         this.historyStorage = historyStorage;
     }
 
+    // TODO use another send
     @Override
     public void sendBroadcast(Message msg) {
         try {
