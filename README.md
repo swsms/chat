@@ -1,12 +1,28 @@
 # Chat application
 
 ## Description
-In this console chat, all users are in the same space and can see each other's messages. The users can also send commands to the server and get the results. 
+In this console chat, all users are in the same space and see each other's messages. The users can also send commands to the server and get the results. 
 
 All messages that start with **/** are interpreted as commands just like in Slack.
 The **/help** command returns the commands' descriptions. 
 A username is unique and set during authentication. It can be changed using the **/rename** command with a parameter.
 
+## A chatting example
+```
+Welcome to the chat! Please, enter a name to start chatting.
+Paul
+Congratulations! You have successfully logged as Paul. Type /help to show the list of commands.
+User Paul is ready to chatting.
+Hello, is here anyone?
+[2019-01-15 01:43:35] Paul: Hello, is here anyone?
+[2019-01-15 01:43:51] Katie: Yes, i'm here. What do you want to do here??
+I want to chat more.
+[2019-01-15 01:44:28] Paul: I want to chat more.
+[2019-01-15 01:44:54] Katie: But not me.
+User Katie has left the chat.
+/users
+You are alone in the chat.
+```
 ## Key features
 - The chat contains client and server as two separated JAR files which can run independently on different machines.
 - All clients and a server interacts through TCP sockets.
@@ -33,21 +49,4 @@ It is also possible to specify host or/and port for both clients and servers usi
 ```
 java -jar <path-to-project>/server/target/chat-server-*.jar -host 0.0.0.0 -port 20001
 java -jar <path-to-project>/client/target/chat-client-*.jar -host 0.0.0.0 -port 20001
-```
-
-## A chatting example
-```
-Welcome to the chat! Please, enter a name to start chatting.
-Paul
-Congratulations! You have successfully logged as Paul. Type /help to show the list of commands.
-User Paul is ready to chatting.
-Hello, is here anyone?
-[2019-01-15 01:43:35] Paul: Hello, is here anyone?
-[2019-01-15 01:43:51] Katie: Yes, i'm here. What do you want to do here??
-I want to chat more.
-[2019-01-15 01:44:28] Paul: I want to chat more.
-[2019-01-15 01:44:54] Katie: But not me.
-User Katie has left the chat.
-/users
-You are alone in the chat.
 ```
