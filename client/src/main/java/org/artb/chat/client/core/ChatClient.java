@@ -5,7 +5,6 @@ import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.ChatComponent;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.connection.BufferedConnection;
-import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

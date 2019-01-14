@@ -36,8 +36,4 @@ public class MessageReaderTest {
         List<String> readMessages = queue.stream().map(Message::getContent).collect(Collectors.toList());
         assertEquals(inputDataParts, readMessages);
     }
-
-    private void consumeMessage(Message msg) {
-
-    }
 }
