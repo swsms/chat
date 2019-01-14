@@ -77,7 +77,7 @@ public class TcpNioConnection implements Connection {
     @Override
     public void notification() {
         SelectionKey key = getSelectionKey();
-        if (key.interestOps() == OP_READ) {
+        if (key.isValid() && key.interestOps() == OP_READ) {
             switchTasks.add(new SwitchKeyInterestOpsTask(key, OP_WRITE));
             selector.wakeup();
         }
@@ -86,9 +86,7 @@ public class TcpNioConnection implements Connection {
     @Override
     public void close() throws IOException {
         SelectionKey key = getSelectionKey();
-        if (key != null) {
-            key.cancel();
-        }
+        key.cancel();
         socket.close();
     }
 

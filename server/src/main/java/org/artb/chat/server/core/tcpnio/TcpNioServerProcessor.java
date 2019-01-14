@@ -90,11 +90,8 @@ public class TcpNioServerProcessor extends ServerProcessor {
     }
 
     private void processKeys() throws IOException {
-        int switched = switchKeyInterestOps();
-        LOGGER.info("Switched keys count: {}", switched);
-
+        switchKeyInterestOps();
         int numKeys = selector.select();
-        LOGGER.info("Selected keys number: {}", numKeys);
 
         if (numKeys > 0) {
             Set<SelectionKey> selectedKeys = selector.selectedKeys();

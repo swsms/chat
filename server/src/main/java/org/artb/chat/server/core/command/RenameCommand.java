@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.artb.chat.server.core.message.MsgConstants.USER_IS_RENAMED_TEMPLATE;
 
-// TODO this command needs sync
 public class RenameCommand implements Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(RenameCommand.class);
 
