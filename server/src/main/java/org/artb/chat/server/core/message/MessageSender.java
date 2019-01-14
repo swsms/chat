@@ -5,7 +5,7 @@ import org.artb.chat.common.message.Message;
 import java.util.List;
 import java.util.UUID;
 
-public interface MsgSender {
+public interface MessageSender {
 
     /**
      * Send message to all authenticated users

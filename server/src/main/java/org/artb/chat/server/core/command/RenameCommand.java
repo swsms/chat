@@ -2,7 +2,7 @@ package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.slf4j.Logger;
@@ -16,14 +16,14 @@ public class RenameCommand implements Command {
 
     private final AuthUserStorage storage;
     private final BufferedConnection connection;
-    private final MsgSender sender;
+    private final MessageSender sender;
 
     private final String newName;
 
     public RenameCommand(String newName,
                          AuthUserStorage storage,
                          BufferedConnection connection,
-                         MsgSender sender) {
+                         MessageSender sender) {
 
         this.newName = newName;
         this.storage = storage;

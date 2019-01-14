@@ -14,16 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class BasicMsgSender implements MsgSender {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BasicMsgSender.class);
+public class BasicMessageSender implements MessageSender {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BasicMessageSender.class);
 
     private final AuthUserStorage userStorage;
     private final Map<UUID, BufferedConnection> connections;
     private final HistoryStorage historyStorage;
 
-    public BasicMsgSender(AuthUserStorage userStorage,
-                          Map<UUID, BufferedConnection> connections,
-                          HistoryStorage historyStorage) {
+    public BasicMessageSender(AuthUserStorage userStorage,
+                              Map<UUID, BufferedConnection> connections,
+                              HistoryStorage historyStorage) {
         this.userStorage = userStorage;
         this.connections = connections;
         this.historyStorage = historyStorage;

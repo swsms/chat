@@ -5,9 +5,9 @@ import org.artb.chat.common.Constants;
 import org.artb.chat.server.core.ConnectionManager;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.ConnectionEvent;
-import org.artb.chat.server.core.message.BasicMsgSender;
+import org.artb.chat.server.core.message.BasicMessageSender;
 import org.artb.chat.server.core.message.MessageProcessor;
-import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InMemoryAuthUserStorage;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
@@ -28,7 +28,7 @@ public class ChatServer implements ChatComponent {
     private final HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
     private final AuthUserStorage userStorage = new InMemoryAuthUserStorage();
 
-    private MsgSender sender;
+    private MessageSender sender;
     private MessageProcessor msgProcessor;
 
     private final AtomicBoolean runningFlag = new AtomicBoolean();
@@ -38,7 +38,7 @@ public class ChatServer implements ChatComponent {
 
     public ChatServer(String host, int port) {
         this.server = new TcpNioServerProcessor(host, port);
-        this.sender = new BasicMsgSender(userStorage, server.getConnections(), historyStorage);
+        this.sender = new BasicMessageSender(userStorage, server.getConnections(), historyStorage);
 
         this.msgProcessor = new MessageProcessor(
                 historyStorage, sender, server.getReceivedDataQueue(), userStorage, runningFlag);

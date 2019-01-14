@@ -1,17 +1,17 @@
 package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.connection.BufferedConnection;
-import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 
 public class CommandFactory {
 
     private final BufferedConnection connection;
-    private final MsgSender sender;
+    private final MessageSender sender;
     private final AuthUserStorage userStorage;
 
     public CommandFactory(BufferedConnection connection,
-                          MsgSender sender,
+                          MessageSender sender,
                           AuthUserStorage userStorage) {
 
         this.connection = connection;

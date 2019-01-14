@@ -2,7 +2,7 @@ package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.message.MsgSender;
+import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +16,9 @@ public class ExitCommand implements Command {
 
     private final AuthUserStorage storage;
     private final BufferedConnection connection;
-    private final MsgSender sender;
+    private final MessageSender sender;
 
-    public ExitCommand(AuthUserStorage storage, BufferedConnection connection, MsgSender sender) {
+    public ExitCommand(AuthUserStorage storage, BufferedConnection connection, MessageSender sender) {
         this.storage = storage;
         this.connection = connection;
         this.sender = sender;

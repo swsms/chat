@@ -6,7 +6,6 @@ import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
-import org.artb.chat.server.core.event.MessageArrivedEvent;
 import org.artb.chat.server.core.event.ReceivedData;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
@@ -26,14 +25,14 @@ public class MessageProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProcessor.class);
 
     private final HistoryStorage historyStorage;
-    private final MsgSender sender;
+    private final MessageSender sender;
     private final BlockingQueue<ReceivedData> events;
     private final AuthUserStorage userStorage;
 
     private final AtomicBoolean runningFlag;
 
     public MessageProcessor(HistoryStorage historyStorage,
-                            MsgSender sender,
+                            MessageSender sender,
                             BlockingQueue<ReceivedData> events,
                             AuthUserStorage storage,
                             AtomicBoolean runningFlag) {
