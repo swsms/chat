@@ -1,10 +1,6 @@
 package org.artb.chat.server.core.storage.auth;
 
-import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -17,7 +13,7 @@ public class InMemoryAuthUserStorageTest {
     private AuthUserStorage storage = null;
     private Random rand = new Random();
 
-    @BeforeTest
+    @BeforeMethod
     public void prepareStorage() {
         storage = new InMemoryAuthUserStorage();
     }
