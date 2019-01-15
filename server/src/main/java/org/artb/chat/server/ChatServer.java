@@ -47,7 +47,7 @@ public class ChatServer {
         this.users = new InMemoryAuthUserStorage();
         this.sender = new BasicMessageSender(users, server::acceptData, history);
 
-        this.factory = new CommandFactory(sender, users, server::closeConnection);
+        this.factory = new CommandFactory(sender, users, server::disconnect);
 
         this.messageProcessors = Stream
                 .generate(() -> new MessageProcessor(history, sender, receivedDataQueue, users, factory))

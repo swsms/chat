@@ -48,5 +48,5 @@ public abstract class ServerProcessor {
 
     public abstract void acceptData(UUID clientId, String data);
 
-    public abstract void closeConnection(UUID id);
+    public abstract void disconnect(UUID id);
 }

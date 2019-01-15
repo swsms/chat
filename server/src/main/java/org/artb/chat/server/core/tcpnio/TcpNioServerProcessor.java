@@ -61,12 +61,12 @@ public class TcpNioServerProcessor extends ServerProcessor {
             }
 
             try {
-                LOGGER.info("Starting process keys loop");
+                LOGGER.info("Start processing keys loop");
                 while (runningFlag.get()) {
                     processKeys();
                 }
             } catch (IOException e) {
-                LOGGER.error("An error occurs while keys processing", e);
+                LOGGER.error("An error occurs while processing keys", e);
                 runningFlag.set(false);
             }
 
@@ -83,7 +83,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         } else {
             runningFlag.set(false);
             try {
-                connections.keySet().forEach(this::closeConnection);
+                connections.keySet().forEach(this::disconnect);
                 serverSocket.close();
             } catch (IOException e) {
                 LOGGER.error("Cannot close socket", e);
@@ -161,7 +161,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
             LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
             receivedDataListener.accept(new ReceivedData(connection.getId(), incomingData));
         } catch (IOException e) {
-            closeConnection(connection.getId());
+            disconnect(connection.getId());
         }
     }
 
@@ -170,11 +170,12 @@ public class TcpNioServerProcessor extends ServerProcessor {
         try {
             connection.flush();
         } catch (IOException e) {
-            closeConnection(connection.getId());
+            disconnect(connection.getId());
         }
     }
 
-    public void closeConnection(UUID id) {
+    @Override
+    public void disconnect(UUID id) {
         BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
