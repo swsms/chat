@@ -47,6 +47,6 @@ java -jar <path-to-project>/client/target/chat-client-*.jar
 ```
 It is also possible to specify host or/and port for both clients and servers using **-host** and **-port**:
 ```
-java -jar <path-to-project>/server/target/chat-server-*.jar -host 0.0.0.0 -port 20001
-java -jar <path-to-project>/client/target/chat-client-*.jar -host 0.0.0.0 -port 20001
+java -jar <path-to-project>/server/target/chat-server-*.jar --host 0.0.0.0 --port 20001
+java -jar <path-to-project>/client/target/chat-client-*.jar --host 0.0.0.0 --port 20001
 ```

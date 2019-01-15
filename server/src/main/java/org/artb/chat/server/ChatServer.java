@@ -1,7 +1,8 @@
 package org.artb.chat.server;
 
-import org.artb.chat.common.ChatComponent;
 import org.artb.chat.common.Constants;
+import org.artb.chat.common.Lifecycle;
+import org.artb.chat.common.settings.ServerConfig;
 import org.artb.chat.server.core.ConnectionManager;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.ConnectionEvent;
@@ -17,55 +18,63 @@ import org.artb.chat.server.core.tcpnio.TcpNioServerProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class ChatServer implements ChatComponent {
+public class ChatServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
 
     private final ServerProcessor server;
     private final BlockingQueue<ConnectionEvent> connectionEventsQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<ReceivedData> receivedDataQueue = new LinkedBlockingQueue<>();
 
-    private final MessageProcessor msgProcessor;
-    private final ConnectionManager manager;
+    private final List<MessageProcessor> messageProcessors;
+    private final List<ConnectionManager> connectionManagers;
 
-    private final AtomicBoolean runningFlag = new AtomicBoolean();
+    public ChatServer(ServerConfig config) {
+        this.server = new TcpNioServerProcessor(config.getHost(), config.getPort());
 
-    public ChatServer(String host, int port) {
-        this.server = new TcpNioServerProcessor(host, port);
+        HistoryStorage history = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
+        AuthUserStorage users = new InMemoryAuthUserStorage();
+        MessageSender sender = new BasicMessageSender(users, server::acceptData, history);
 
-        HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
-        AuthUserStorage userStorage = new InMemoryAuthUserStorage();
-        MessageSender sender = new BasicMessageSender(userStorage, server::acceptData, historyStorage);
+        this.messageProcessors = Stream
+                .generate(() -> new MessageProcessor(history, sender, receivedDataQueue, users))
+                .limit(config.getMsgProcessors())
+                .collect(Collectors.toList());
 
-        this.msgProcessor = new MessageProcessor(
-                historyStorage, sender, receivedDataQueue, userStorage, runningFlag);
-
-        this.manager = new ConnectionManager(connectionEventsQueue, runningFlag, sender, userStorage);
+        this.connectionManagers = Stream
+                .generate(() -> new ConnectionManager(connectionEventsQueue, sender, users))
+                .limit(config.getConnectionManagers())
+                .collect(Collectors.toList());
     }
 
-    @Override
     public void start() {
-        runningFlag.set(true);
-
-        Thread msgProcessorThread = new Thread(msgProcessor, "msg-processor-thread");
-        msgProcessorThread.start();
-
-        Thread connectionManager = new Thread(manager, "connection-manager-thread");
-        connectionManager.start();
+        startRunnables(messageProcessors, "msg-processor");
+        startRunnables(connectionManagers, "con-manager");
 
         server.setConnectionEventListener(connectionEventsQueue::add);
         server.setReceivedDataListener(receivedDataQueue::add);
 
-        Thread serverThread = new Thread(server::start, "main-server-thread");
-        serverThread.start();
+        startRunnables(Collections.singletonList(server::start), "main-server");
     }
 
-    @Override
+    private void startRunnables(List<? extends Runnable> runnables, String basicThreadName) {
+        for (int i = 0; i < runnables.size(); i++) {
+            String finalName = basicThreadName + (runnables.size() > 1 ? "-" + i : "");
+            Thread thread = new Thread(runnables.get(i), finalName);
+            thread.start();
+            LOGGER.info("Starting {} thread", finalName);
+        }
+    }
+
     public void stop() {
         server.stop();
-        runningFlag.set(false);
+        messageProcessors.forEach(MessageProcessor::stop);
+        connectionManagers.forEach(ConnectionManager::stop);
     }
 }

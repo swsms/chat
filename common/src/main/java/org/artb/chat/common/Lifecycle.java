@@ -1,6 +1,6 @@
 package org.artb.chat.common;
 
-public interface ChatComponent {
+public interface Lifecycle {
 
     void start();
 

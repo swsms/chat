@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.artb.chat.server.core.message.MsgConstants.*;
 
@@ -29,24 +28,23 @@ public class MessageProcessor implements Runnable {
     private final BlockingQueue<ReceivedData> events;
     private final AuthUserStorage userStorage;
 
-    private final AtomicBoolean runningFlag;
+    private volatile boolean running;
 
     public MessageProcessor(HistoryStorage historyStorage,
                             MessageSender sender,
                             BlockingQueue<ReceivedData> events,
-                            AuthUserStorage storage,
-                            AtomicBoolean runningFlag) {
+                            AuthUserStorage storage) {
 
         this.historyStorage = historyStorage;
         this.sender = sender;
         this.events = events;
         this.userStorage = storage;
-        this.runningFlag = runningFlag;
     }
 
     @Override
     public void run() {
-        while (runningFlag.get()) {
+        running = true;
+        while (running) {
             final ReceivedData receivedData;
             try {
                 receivedData = events.take();
@@ -79,6 +77,10 @@ public class MessageProcessor implements Runnable {
             });
         }
         LOGGER.info("Successfully stopped");
+    }
+
+    public void stop() {
+        running = false;
     }
 
     private void executeCommandForConnection(BufferedConnection connection, String content) {

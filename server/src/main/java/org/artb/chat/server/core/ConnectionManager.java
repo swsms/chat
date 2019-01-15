@@ -17,23 +17,23 @@ public class ConnectionManager implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 
     private final BlockingQueue<ConnectionEvent> events;
-    private final AtomicBoolean runningFlag;
     private final MessageSender sender;
     private final AuthUserStorage storage;
 
+    private volatile boolean running;
+
     public ConnectionManager(BlockingQueue<ConnectionEvent> events,
-                             AtomicBoolean runningFlag,
                              MessageSender sender,
                              AuthUserStorage storage) {
         this.events = events;
-        this.runningFlag = runningFlag;
         this.sender = sender;
         this.storage = storage;
     }
 
     @Override
     public void run() {
-        while (runningFlag.get()) {
+        running = true;
+        while (running) {
             final ConnectionEvent event;
             try {
                 event = events.take();
@@ -55,5 +55,9 @@ public class ConnectionManager implements Runnable {
                     break;
             }
         }
+    }
+
+    public void stop() {
+        running = false;
     }
 }

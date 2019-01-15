@@ -1,18 +1,44 @@
 package org.artb.chat.common.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.artb.chat.common.Utils;
+import org.artb.chat.common.settings.Config;
+import org.artb.chat.common.settings.ServerConfig;
+import org.artb.chat.common.settings.SettingsParseException;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.testng.Assert.*;
 
 public class UtilsTest {
+
+    @Test
+    public void testParseFromArgsArrayWhenEmpty() throws SettingsParseException {
+        String[] args = { };
+        Config settings = Utils.parseFromArgsArray(args,  Config.class);
+        Assert.assertEquals(settings.getHost(), "localhost");
+        Assert.assertEquals(settings.getPort(), 8999);
+    }
+
+    @Test
+    public void testParseFromArgsArrayWhenNonEmpty() throws SettingsParseException {
+        String[] args = { "--host", "127.0.0.1", "--port", "9999" };
+        Config settings = Utils.parseFromArgsArray(args, Config.class);
+        Assert.assertEquals(settings.getHost(), "127.0.0.1");
+        Assert.assertEquals(settings.getPort(), 9999);
+    }
+
+    @Test
+    public void testParseFromArgsArrayForChildClass() throws SettingsParseException {
+        String[] args = { "--host", "127.0.0.1", "--port", "9999", "--msg-processors", "4" };
+        ServerConfig settings = Utils.parseFromArgsArray(args,  ServerConfig.class);
+        Assert.assertEquals(settings.getHost(), "127.0.0.1");
+        Assert.assertEquals(settings.getPort(), 9999);
+        Assert.assertEquals(settings.getMsgProcessors(), 4);
+    }
 
     @Test
     public void testSerialize() throws IOException {
