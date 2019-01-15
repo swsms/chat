@@ -11,12 +11,14 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Queue;
+import java.util.UUID;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
 
 public class TcpNioConnection implements Connection {
 
+    private final UUID id;
     private final Selector selector;
     private final SocketChannel socket;
 
@@ -24,9 +26,10 @@ public class TcpNioConnection implements Connection {
     private final Charset charset = StandardCharsets.UTF_8;
     private final Queue<SwitchKeyInterestOpsTask> switchTasks;
 
-    public TcpNioConnection(Selector selector,
+    public TcpNioConnection(UUID id, Selector selector,
                             SocketChannel socket,
                             Queue<SwitchKeyInterestOpsTask> switchTasks) {
+        this.id = id;
         this.selector = selector;
         this.socket = socket;
         this.switchTasks = switchTasks;
@@ -91,5 +94,10 @@ public class TcpNioConnection implements Connection {
 
     private SelectionKey getSelectionKey() {
         return socket.keyFor(selector);
+    }
+
+    @Override
+    public UUID getId() {
+        return id;
     }
 }

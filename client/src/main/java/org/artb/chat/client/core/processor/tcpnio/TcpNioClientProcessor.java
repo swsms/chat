@@ -39,8 +39,7 @@ public class TcpNioClientProcessor extends ClientProcessor {
         socket.register(selector, OP_CONNECT);
 
         this.connection = new BufferedConnection(
-                UUID.randomUUID(),
-                new TcpNioConnection(selector, socket, switchTasks));
+                new TcpNioConnection(UUID.randomUUID(), selector, socket, switchTasks));
     }
 
     public void start() {

@@ -1,6 +1,7 @@
 package org.artb.chat.server.core.tcpnio;
 
 import org.artb.chat.common.connection.BufferedConnection;
+import org.artb.chat.common.connection.Connection;
 import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.server.core.ServerProcessor;
@@ -29,7 +30,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
     private Selector selector;
     private ServerSocketChannel serverSocket;
 
-    private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
+    private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
 
     public TcpNioServerProcessor(String host, int port) {
@@ -93,7 +94,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
 
     @Override
     public void acceptData(UUID clientId, String data) {
-        BufferedConnection connection = connections.get(clientId);
+        BufferedConnection connection = (BufferedConnection) connections.get(clientId);
         connection.putInBuffer(data);
         connection.notification();
     }
@@ -132,8 +133,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         final BufferedConnection connection;
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
-            connection = new BufferedConnection(
-                    clientId, new TcpNioConnection(selector, clientSocket, switchTasks));
+            connection = new BufferedConnection(new TcpNioConnection(clientId, selector, clientSocket, switchTasks));
 
             clientSocket.configureBlocking(false);
             clientSocket.register(selector, OP_READ, connection);
@@ -151,11 +151,11 @@ public class TcpNioServerProcessor extends ServerProcessor {
             LOGGER.warn("Cannot get remote address for {}: {}", clientId, e.getMessage());
         }
 
-        connectionEventListener.accept(new ConnectionEvent(connection.getId(), ConnectionEventType.CONNECTED));
+        connectionEventListener.accept(new ConnectionEvent(clientId, ConnectionEventType.CONNECTED));
     }
 
     private void read(SelectionKey key) {
-        BufferedConnection connection = (BufferedConnection) key.attachment();
+        Connection connection = (Connection) key.attachment();
         try {
             String incomingData = connection.take();
             LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
@@ -176,13 +176,13 @@ public class TcpNioServerProcessor extends ServerProcessor {
 
     @Override
     public void disconnect(UUID id) {
-        BufferedConnection connection = connections.remove(id);
+        Connection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
                 LOGGER.info("Connection with {} was successfully closed.", id);
-                connectionEventListener.accept(new ConnectionEvent(
-                        connection.getId(), ConnectionEventType.DISCONNECTED
+                connectionEventListener.accept(
+                        new ConnectionEvent(id, ConnectionEventType.DISCONNECTED
                 ));
             } catch (IOException e) {
                 LOGGER.error("Cannot close connection", e);

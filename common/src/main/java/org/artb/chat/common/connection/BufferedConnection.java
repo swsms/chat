@@ -1,6 +1,5 @@
 package org.artb.chat.common.connection;
 
-import org.artb.chat.common.Identifiable;
 import org.artb.chat.common.Utils;
 
 import java.io.IOException;
@@ -13,13 +12,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Just wrap a single connection with a buffer
  */
-public class BufferedConnection extends Identifiable implements Connection, HasBuffer {
+public class BufferedConnection implements Connection, HasBuffer {
 
     private final Connection connection;
     private final Queue<String> dataBuffer = new ConcurrentLinkedQueue<>();
 
-    public BufferedConnection(UUID id, Connection connection) {
-        super(id);
+    public BufferedConnection(Connection connection) {
         this.connection = connection;
     }
 
@@ -61,5 +59,10 @@ public class BufferedConnection extends Identifiable implements Connection, HasB
     public void close() throws IOException {
         connection.close();
         dataBuffer.clear();
+    }
+
+    @Override
+    public UUID getId() {
+        return connection.getId();
     }
 }

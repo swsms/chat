@@ -1,17 +1,18 @@
 package org.artb.chat.common.connection;
 
-import java.io.IOException;
-import java.util.List;
+import org.artb.chat.common.Identifiable;
 
-public interface Connection {
+import java.io.IOException;
+
+public interface Connection extends Identifiable  {
 
     void send(String data) throws IOException;
 
     String take() throws IOException;
 
-    void notification();
-
     boolean connect() throws IOException;
 
     void close() throws IOException;
+
+    void notification();
 }
