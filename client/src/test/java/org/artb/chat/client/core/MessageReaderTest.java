@@ -25,7 +25,7 @@ public class MessageReaderTest {
         AtomicBoolean runningFlag = new AtomicBoolean(true);
         ConcurrentLinkedQueue<Message> queue = new ConcurrentLinkedQueue<>();
 
-        MessageReader reader = new MessageReader(queue::add, clientInput, runningFlag);
+        MessageReader reader = new MessageReader(queue::add, clientInput);
         Thread readerThread = new Thread(reader);
         readerThread.start();
         readerThread.join();

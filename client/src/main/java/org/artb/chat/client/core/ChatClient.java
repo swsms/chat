@@ -1,82 +1,74 @@
 package org.artb.chat.client.core;
 
+import org.artb.chat.client.core.processor.ClientProcessor;
+import org.artb.chat.client.core.processor.tcpnio.TcpNioClientProcessor;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
+import org.artb.chat.common.Lifecycle;
 import org.artb.chat.common.Utils;
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
+import org.artb.chat.common.settings.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-public abstract class ChatClient {
+public class ChatClient implements Lifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatClient.class);
 
-    protected final String serverHost;
-    protected final int serverPort;
+    private final ClientProcessor processor;
 
-    protected BufferedConnection connection;
-    protected final UIDisplay display = new UIConsoleDisplay();
+    private final UIDisplay display = new UIConsoleDisplay();
+    private final MessageReader reader;
+    // TODO private final MessageProcessor
 
-    protected final AtomicBoolean running = new AtomicBoolean();
-    private MessageReader reader;
-    private final InputStream input;
-
-    protected ChatClient(String serverHost, int serverPort) {
-        this(serverHost, serverPort, System.in);
+    public ChatClient(Config config, InputStream input) {
+        this.processor = new TcpNioClientProcessor(config.getHost(), config.getPort());
+        this.reader = new MessageReader(this::send, input);
+        prepareProcessor();
     }
 
-    protected ChatClient(String serverHost, int serverPort, InputStream input) {
-        this.serverHost = serverHost;
-        this.serverPort = serverPort;
-        this.input = input;
+    public ChatClient(Config config) {
+        this(config, System.in);
     }
-
-    protected abstract BufferedConnection configureConnection() throws ClientException;
-
-    protected abstract void doMainLogic() throws ClientException;
 
     private void send(Message msg) {
         try {
             String data = Utils.serialize(msg);
-            connection.putInBuffer(data);
-            connection.notification();
+            processor.acceptData(data);
         } catch (IOException e) {
             LOGGER.error("Cannot serialize msg: {}", msg, e);
         }
     }
 
+    @Override
     public void start() {
-        running.set(true);
+        Thread processorThread = new Thread(processor::start, "processor");
+        processorThread.start();
 
-        try {
-            this.connection = configureConnection();
-
-            this.reader = new MessageReader(this::send, input, running);
-            Thread asyncReader = new Thread(reader);
-            asyncReader.start();
-
-            doMainLogic();
-        } catch (ClientException e) {
-            LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
-        } finally {
-            stop();
-        }
+        Thread readerThread = new Thread(reader, "msg-reader");
+        readerThread.start();
     }
 
-    public void stop() {
-        try {
-            running.set(false);
-            if (connection != null) {
-                connection.close();
+    private void prepareProcessor() {
+        processor.setDisconnectHandler(() -> {
+            this.stop();
+            display.print("Disconnected from the server. Press any key to exit the client program.");
+        });
+        processor.setReceivedDataListener((data) -> {
+            try {
+                List<Message> messages = Utils.deserializeList(data);
+                messages.forEach(display::print);
+            } catch (IOException e) {
+                LOGGER.error("Cannot deserialize data {}", data, e);
             }
-            display.print("Successfully disconnected. Press any key to exit the client program.");
-        } catch (IOException e) {
-            LOGGER.error("Cannot close socket", e);
-        }
+        });
+    }
+
+    @Override
+    public void stop() {
+        reader.stop();
     }
 }

@@ -1,6 +1,7 @@
 package org.artb.chat.server;
 
 import org.artb.chat.common.Constants;
+import org.artb.chat.common.Lifecycle;
 import org.artb.chat.common.settings.ServerConfig;
 import org.artb.chat.server.core.ConnectionManager;
 import org.artb.chat.server.core.ServerProcessor;
@@ -25,7 +26,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ChatServer {
+public class ChatServer implements Lifecycle {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
 
     private final ServerProcessor server;

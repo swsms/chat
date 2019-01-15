@@ -1,7 +1,6 @@
 package org.artb.chat.client;
 
 import org.artb.chat.client.core.ChatClient;
-import org.artb.chat.client.core.tcpnio.TcpNioChatClient;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.settings.Config;
 import org.artb.chat.common.settings.SettingsParseException;
@@ -16,8 +15,8 @@ public class ClientRunner {
 
     public static void main(String[] args) {
         try {
-            Config settings = Utils.parseFromArgsArray(args, Config.class);
-            ChatClient client = new TcpNioChatClient(settings.getHost(), settings.getPort());
+            Config config = Utils.parseFromArgsArray(args, Config.class);
+            ChatClient client = new ChatClient(config);
             client.start();
 //            runBot(settings);
         } catch (SettingsParseException e) {

@@ -1,13 +1,14 @@
 package org.artb.chat.server.core;
 
+import org.artb.chat.common.Lifecycle;
 import org.artb.chat.server.core.event.ConnectionEvent;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-// TODO implement LifeCycle
-public abstract class ServerProcessor {
+
+public abstract class ServerProcessor implements Lifecycle {
     protected final String host;
     protected final int port;
 
@@ -20,22 +21,6 @@ public abstract class ServerProcessor {
     public ServerProcessor(String host, int port) {
         this.host = host;
         this.port = port;
-    }
-
-    public abstract void start();
-
-    public abstract void stop();
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public AtomicBoolean getRunningFlag() {
-        return runningFlag;
     }
 
     public void setReceivedDataListener(Consumer<ReceivedData> receivedDataListener) {

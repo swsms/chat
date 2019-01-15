@@ -11,23 +11,26 @@ public class MessageReader implements Runnable {
 
     private final Scanner scanner;
     private final Consumer<Message> consumer;
-    private final AtomicBoolean runningFlag;
+    private volatile boolean running;
 
     public MessageReader(
             Consumer<Message> consumer,
-            InputStream input,
-            AtomicBoolean runningFlag) {
+            InputStream input) {
         this.consumer = consumer;
-        this.runningFlag = runningFlag;
         this.scanner = new Scanner(input);
     }
 
     @Override
     public void run() {
-        while (runningFlag.get() && scanner.hasNextLine()) {
+        running = true;
+        while (running && scanner.hasNextLine()) {
             String messageText = scanner.nextLine();
             Message msg = Message.newUserMessage(messageText);
             consumer.accept(msg);
         }
+    }
+
+    public void stop() {
+        this.running = false;
     }
 }
