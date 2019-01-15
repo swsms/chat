@@ -25,23 +25,20 @@ public class ChatServer implements ChatComponent {
     private static final Logger LOGGER = LoggerFactory.getLogger(ChatServer.class);
 
     private final ServerProcessor server;
-
-    private final HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
-    private final AuthUserStorage userStorage = new InMemoryAuthUserStorage();
-
-    private MessageSender sender;
-    private MessageProcessor msgProcessor;
-
-    private final AtomicBoolean runningFlag = new AtomicBoolean();
-
     private final BlockingQueue<ConnectionEvent> connectionEventsQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<ReceivedData> receivedDataQueue = new LinkedBlockingQueue<>();
 
+    private final MessageProcessor msgProcessor;
     private final ConnectionManager manager;
+
+    private final AtomicBoolean runningFlag = new AtomicBoolean();
 
     public ChatServer(String host, int port) {
         this.server = new TcpNioServerProcessor(host, port);
-        this.sender = new BasicMessageSender(userStorage, server.getConnections(), historyStorage);
+
+        HistoryStorage historyStorage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
+        AuthUserStorage userStorage = new InMemoryAuthUserStorage();
+        MessageSender sender = new BasicMessageSender(userStorage, server::acceptData, historyStorage);
 
         this.msgProcessor = new MessageProcessor(
                 historyStorage, sender, receivedDataQueue, userStorage, runningFlag);

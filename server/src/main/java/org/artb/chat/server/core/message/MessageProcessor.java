@@ -124,25 +124,4 @@ public class MessageProcessor implements Runnable {
 
         sender.sendPersonal(clientId, loggedMsg);
     }
-
-    public void sendBroadcast(Message msg) {
-        try {
-            String jsonMsg = Utils.serialize(msg);
-            userStorage.getUsers().forEach((id, name) -> {
-                // sender send
-            });
-            historyStorage.add(msg);
-        } catch (IOException e) {
-            LOGGER.info("Cannot send message: {}", msg, e);
-        }
-    }
-
-    public void sendPersonal(UUID uuid, Message msg) {
-        try {
-            String jsonMsg = Utils.serialize(msg);
-            // sender send
-        } catch (IOException e) {
-            LOGGER.error("Cannot send message {} to {}", msg, uuid, e);
-        }
-    }
 }

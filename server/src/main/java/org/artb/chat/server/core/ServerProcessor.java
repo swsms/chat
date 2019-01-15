@@ -53,4 +53,6 @@ public abstract class ServerProcessor {
     public void setConnectionEventListener(Consumer<ConnectionEvent> listener) {
         this.connectionEventListener = listener;
     }
+
+    public abstract void acceptData(UUID clientId, String data);
 }

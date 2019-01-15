@@ -5,6 +5,9 @@ import org.artb.chat.common.message.Message;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Represents a protocol-independent sender
+ */
 public interface MessageSender {
 
     /**

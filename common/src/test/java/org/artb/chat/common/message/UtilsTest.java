@@ -24,16 +24,6 @@ public class UtilsTest {
     }
 
     @Test
-    public void zonedDateTime() throws JsonProcessingException {
-        ZonedDateTime date = ZonedDateTime.parse("2016-10-02T20:15:30+01:00",
-                DateTimeFormatter.ISO_DATE_TIME);
-
-        String zone = DateTimeFormatter.ISO_DATE_TIME.format(date);
-        System.out.println(date);
-
-    }
-
-    @Test
     public void testDeserializeWithServed() throws IOException {
         String json = "{\"content\":\"Hello\"}";
         Message msg = Utils.deserialize(json);

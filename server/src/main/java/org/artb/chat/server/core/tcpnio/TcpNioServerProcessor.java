@@ -89,6 +89,13 @@ public class TcpNioServerProcessor extends ServerProcessor {
         }
     }
 
+    @Override
+    public void acceptData(UUID clientId, String data) {
+        BufferedConnection connection = connections.get(clientId);
+        connection.putInBuffer(data);
+        connection.notification();
+    }
+
     private void processKeys() throws IOException {
         switchKeyInterestOps();
         int numKeys = selector.select();
