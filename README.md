@@ -31,7 +31,8 @@ You are alone in the chat.
 - All data is stored in RAM.
 - The project is built by Maven. Java 8+ is required.
 
-## Building and running
+## Build and run
+Being in the project directory:
 
 - **Build artifacts** (server, client and other modules).
 ```
@@ -39,14 +40,20 @@ mvn clean package
 ```
 - **Running server** (it will use the port 8999 on the localhost)
 ```
-java -jar <path-to-project>/server/target/chat-server-*.jar
+java -jar server/target/chat-server-*.jar
 ```
 - **Running client** (it will try to connect to the port 8999 on the localhost).
 ```
-java -jar <path-to-project>/client/target/chat-client-*.jar
+java -jar client/target/chat-client-*.jar
 ```
-It is also possible to specify host or/and port for both clients and servers using **-host** and **-port**:
+## Run with parameters
+
+It is also possible to specify host or/and port for both clients and servers using **--host** and **--port**:
 ```
-java -jar <path-to-project>/server/target/chat-server-*.jar --host 0.0.0.0 --port 20001
-java -jar <path-to-project>/client/target/chat-client-*.jar --host 0.0.0.0 --port 20001
+java -jar server/target/chat-server-*.jar --host 0.0.0.0 --port 20001
+java -jar client/target/chat-client-*.jar --host 0.0.0.0 --port 20001
+```
+The server supports parameters which specify the number of message processor threads (default is 2) and the number of connection manager threads (default is 1):
+```
+java -jar server/target/chat-server-*.jar --msg-processors 4 --con-managers 2
 ```
