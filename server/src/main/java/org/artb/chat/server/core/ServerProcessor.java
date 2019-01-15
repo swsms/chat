@@ -1,21 +1,17 @@
 package org.artb.chat.server.core;
 
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.server.core.event.ConnectionEvent;
-import org.artb.chat.server.core.event.ReceivedData;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+// TODO implement LifeCycle
 public abstract class ServerProcessor {
     protected final String host;
     protected final int port;
 
     protected final AtomicBoolean runningFlag = new AtomicBoolean();
-    protected final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
 
     /* (something) -> { } is a function for default listeners to avoid nulls */
     protected Consumer<ConnectionEvent> connectionEventListener = (event) -> { };
@@ -38,10 +34,6 @@ public abstract class ServerProcessor {
         return port;
     }
 
-    public Map<UUID, BufferedConnection> getConnections() {
-        return connections;
-    }
-
     public AtomicBoolean getRunningFlag() {
         return runningFlag;
     }
@@ -55,4 +47,6 @@ public abstract class ServerProcessor {
     }
 
     public abstract void acceptData(UUID clientId, String data);
+
+    public abstract void closeConnection(UUID id);
 }

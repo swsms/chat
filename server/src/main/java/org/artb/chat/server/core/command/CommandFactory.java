@@ -1,22 +1,24 @@
 package org.artb.chat.server.core.command;
 
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 
+import java.util.UUID;
+import java.util.function.Consumer;
+
 public class CommandFactory {
 
-    private final BufferedConnection connection;
     private final MessageSender sender;
     private final AuthUserStorage userStorage;
+    private final Consumer<UUID> closer;
 
-    public CommandFactory(BufferedConnection connection,
-                          MessageSender sender,
-                          AuthUserStorage userStorage) {
+    public CommandFactory(MessageSender sender,
+                          AuthUserStorage userStorage,
+                          Consumer<UUID> closer) {
 
-        this.connection = connection;
         this.sender = sender;
         this.userStorage = userStorage;
+        this.closer = closer;
     }
 
     /**
@@ -26,31 +28,30 @@ public class CommandFactory {
      *
      * @return command or a special type DoNothingCommand
      */
-    public Command createCommand(String content) throws CommandParsingException {
-        String[] commandWithParams = content.split("\\s+");
+    public Command createCommandForUser(UUID userId, String content) throws CommandParsingException {
+        String[] cmdWithParams = content.split("\\s+");
 
-        CommandType type = CommandType.findCommandType(commandWithParams[0]);
+        CommandType type = CommandType.findCommandType(cmdWithParams[0]);
 
         if (type == null) {
-            return new NotValidCommand(content, connection, sender);
+            return new NotValidCommand(userId, content, sender);
         }
 
         switch (type) {
             case HELP:
-                return new HelpCommand(connection, sender);
+                return new HelpCommand(userId, sender);
             case EXIT:
-                return new ExitCommand(userStorage, connection, sender);
+                return new ExitCommand(userId, closer);
             case RENAME:
-                if (commandWithParams.length < 2) {
+                if (cmdWithParams.length < 2) {
                     throw new CommandParsingException("No new name specified");
                 } else {
-                    return new RenameCommand(commandWithParams[1],
-                            userStorage, connection, sender);
+                    return new RenameCommand(userId, cmdWithParams[1], userStorage, sender);
                 }
             case USERS:
-                return new UsersCommand(userStorage, connection, sender);
+                return new UsersCommand(userId, userStorage, sender);
             default:
-                return new NotValidCommand(content, connection, sender);
+                return new NotValidCommand(userId, content, sender);
         }
     }
 }

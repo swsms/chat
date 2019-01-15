@@ -6,7 +6,7 @@ import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.server.core.ServerProcessor;
 import org.artb.chat.server.core.event.ConnectionEvent;
 import org.artb.chat.server.core.event.ConnectionEventType;
-import org.artb.chat.server.core.event.ReceivedData;
+import org.artb.chat.server.core.ReceivedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +17,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
@@ -28,6 +29,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
     private Selector selector;
     private ServerSocketChannel serverSocket;
 
+    private final Map<UUID, BufferedConnection> connections = new ConcurrentHashMap<>();
     private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
 
     public TcpNioServerProcessor(String host, int port) {
@@ -149,9 +151,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
             LOGGER.warn("Cannot get remote address for {}: {}", clientId, e.getMessage());
         }
 
-        connectionEventListener.accept(new ConnectionEvent(
-                connection.getId(), connection, ConnectionEventType.CONNECTED
-        ));
+        connectionEventListener.accept(new ConnectionEvent(connection.getId(), ConnectionEventType.CONNECTED));
     }
 
     private void read(SelectionKey key) {
@@ -159,7 +159,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
         try {
             String incomingData = connection.take();
             LOGGER.info("Incoming data {} on {}", incomingData, connection.getId());
-            receivedDataListener.accept(new ReceivedData(connection.getId(), incomingData, connection));
+            receivedDataListener.accept(new ReceivedData(connection.getId(), incomingData));
         } catch (IOException e) {
             closeConnection(connection.getId());
         }
@@ -174,14 +174,14 @@ public class TcpNioServerProcessor extends ServerProcessor {
         }
     }
 
-    private void closeConnection(UUID id) {
+    public void closeConnection(UUID id) {
         BufferedConnection connection = connections.remove(id);
         if (connection != null) {
             try {
                 connection.close();
                 LOGGER.info("Connection with {} was successfully closed.", id);
                 connectionEventListener.accept(new ConnectionEvent(
-                        connection.getId(), connection, ConnectionEventType.DISCONNECTED
+                        connection.getId(), ConnectionEventType.DISCONNECTED
                 ));
             } catch (IOException e) {
                 LOGGER.error("Cannot close connection", e);

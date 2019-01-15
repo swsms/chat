@@ -1,24 +1,23 @@
 package org.artb.chat.server.core.command;
 
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.artb.chat.server.core.message.MsgConstants.*;
 
 public class UsersCommand implements Command {
-
+    private final UUID userId;
     private final AuthUserStorage storage;
-    private final BufferedConnection connection;
     private final MessageSender sender;
 
-    public UsersCommand(AuthUserStorage storage, BufferedConnection connection, MessageSender sender) {
+    public UsersCommand(UUID userId, AuthUserStorage storage, MessageSender sender) {
+        this.userId = userId;
         this.storage = storage;
-        this.connection = connection;
         this.sender = sender;
     }
 
@@ -34,6 +33,6 @@ public class UsersCommand implements Command {
                 String.format(LIST_OF_USERS_TEMPLATE, users.size(), joinedUsers) :
                 USER_ALONE_IN_CHAT_TEXT;
 
-        sender.sendPersonal(connection.getId(), Message.newServerMessage(text));
+        sender.sendPersonal(userId, Message.newServerMessage(text));
     }
 }

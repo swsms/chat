@@ -13,6 +13,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.artb.chat.server.core.message.MsgConstants.LEFT_CHAT_TEMPLATE;
 import static org.artb.chat.server.core.message.MsgConstants.REQUEST_NAME_TEXT;
 
+/**
+ * Manage users connected and disconnected to the chat.
+ * Here "Connection" means not a low-level connection, but a fact that a user is in the chat.
+ */
 public class ConnectionManager implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionManager.class);
 

@@ -1,12 +1,11 @@
 package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
-import org.artb.chat.server.core.event.ReceivedData;
+import org.artb.chat.server.core.ReceivedData;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
@@ -25,20 +24,23 @@ public class MessageProcessor implements Runnable {
 
     private final HistoryStorage historyStorage;
     private final MessageSender sender;
-    private final BlockingQueue<ReceivedData> events;
     private final AuthUserStorage userStorage;
+    private final CommandFactory factory;
 
+    private final BlockingQueue<ReceivedData> events;
     private volatile boolean running;
 
     public MessageProcessor(HistoryStorage historyStorage,
                             MessageSender sender,
                             BlockingQueue<ReceivedData> events,
-                            AuthUserStorage storage) {
+                            AuthUserStorage storage,
+                            CommandFactory factory) {
 
         this.historyStorage = historyStorage;
         this.sender = sender;
         this.events = events;
         this.userStorage = storage;
+        this.factory = factory;
     }
 
     @Override
@@ -62,17 +64,17 @@ public class MessageProcessor implements Runnable {
             }
 
             incomingMessages.forEach((msg) -> {
-                UUID clientId = receivedData.getClientId();
+                UUID userId = receivedData.getClientId();
                 String msgContent = msg.getContent().trim();
 
-                if (userStorage.authenticated(clientId)) {
+                if (userStorage.authenticated(userId)) {
                     if (msgContent.startsWith(Command.CMD_CHAR)) {
-                        executeCommandForConnection(receivedData.getConnection(), msgContent);
+                        createAndExecuteCommand(userId, msgContent);
                     } else {
-                        broadcastProcessedMessage(clientId, msgContent);
+                        broadcastProcessedMessage(userId, msgContent);
                     }
                 } else {
-                    tryAuthenticate(clientId, msgContent);
+                    tryAuthenticate(userId, msgContent);
                 }
             });
         }
@@ -83,14 +85,13 @@ public class MessageProcessor implements Runnable {
         running = false;
     }
 
-    private void executeCommandForConnection(BufferedConnection connection, String content) {
-        CommandFactory factory = new CommandFactory(connection, sender, userStorage);
+    private void createAndExecuteCommand(UUID userId, String content) {
         try {
-            Command command = factory.createCommand(content);
+            Command command = factory.createCommandForUser(userId, content);
             command.execute();
         } catch (CommandParsingException e) {
             LOGGER.warn("Cannot parse command: ", e.getMessage());
-            sender.sendPersonal(connection.getId(), Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
+            sender.sendPersonal(userId, Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
         }
     }
 

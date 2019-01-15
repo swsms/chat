@@ -1,43 +1,30 @@
 package org.artb.chat.server.core.command;
 
-import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.message.Message;
+import org.artb.chat.server.core.event.ConnectionEvent;
+import org.artb.chat.server.core.event.ConnectionEventType;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.util.UUID;
+import java.util.function.Consumer;
 
-import static org.artb.chat.server.core.message.MsgConstants.LEFT_CHAT_TEMPLATE;
 
 public class ExitCommand implements Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExitCommand.class);
 
-    private final AuthUserStorage storage;
-    private final BufferedConnection connection;
-    private final MessageSender sender;
+    private final UUID userId;
+    private final Consumer<UUID> closer;
 
-    public ExitCommand(AuthUserStorage storage, BufferedConnection connection, MessageSender sender) {
-        this.storage = storage;
-        this.connection = connection;
-        this.sender = sender;
+    public ExitCommand(UUID userId, Consumer<UUID> closer) {
+        this.userId = userId;
+        this.closer = closer;
     }
 
     @Override
     public void execute() {
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (IOException e) {
-                LOGGER.error("Cannot close connection", e);
-            }
-        }
-
-        if (connection.getId() != null && storage.authenticated(connection.getId())) {
-            String user = storage.removeUser(connection.getId());
-            String text = String.format(LEFT_CHAT_TEMPLATE, user);
-            sender.sendBroadcast(Message.newServerMessage(text));
-        }
+        closer.accept(userId);
     }
 }

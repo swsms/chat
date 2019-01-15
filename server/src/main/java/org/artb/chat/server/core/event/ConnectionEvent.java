@@ -1,14 +1,12 @@
 package org.artb.chat.server.core.event;
 
-import org.artb.chat.common.connection.BufferedConnection;
-
 import java.util.UUID;
 
 public class ConnectionEvent extends Event {
     private final ConnectionEventType type;
 
-    public ConnectionEvent(UUID clientId, BufferedConnection connection, ConnectionEventType type) {
-        super(clientId, connection);
+    public ConnectionEvent(UUID clientId, ConnectionEventType type) {
+        super(clientId);
         this.type = type;
     }
 
