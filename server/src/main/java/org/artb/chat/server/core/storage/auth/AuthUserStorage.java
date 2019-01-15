@@ -15,5 +15,9 @@ public interface AuthUserStorage {
 
     Map<UUID, String> getUsers();
 
+    /**
+     * Update or insert a user name.
+     * The name of a user should be always unique
+     */
     void upsertUserName(UUID clientId, String newName) throws InvalidNameException;
 }

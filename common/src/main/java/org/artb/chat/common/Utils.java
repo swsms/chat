@@ -48,10 +48,6 @@ public final class Utils {
         return Objects.isNull(str) || str.trim().length() == 0;
     }
 
-    public static boolean nonBlank(String str) {
-        return !isBlank(str);
-    }
-
     public static LocalDateTime toLocalTimeZoneWithoutNano(ZonedDateTime zdt) {
         return zdt.withZoneSameInstant(ZoneId.systemDefault())
                 .toLocalDateTime()
