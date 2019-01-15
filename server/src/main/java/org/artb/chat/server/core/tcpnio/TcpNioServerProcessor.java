@@ -2,6 +2,7 @@ package org.artb.chat.server.core.tcpnio;
 
 import org.artb.chat.common.connection.BufferedConnection;
 import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.connection.tcpnio.NioUtils;
 import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.artb.chat.server.core.ServerProcessor;
@@ -48,44 +49,40 @@ public class TcpNioServerProcessor extends ServerProcessor {
 
     @Override
     public void start() {
-        if (runningFlag.get()) {
+        if (running) {
             LOGGER.warn("The server was already started. It will not be started again.");
         } else {
-            runningFlag.set(true);
+            running = true;
 
             try {
                 configure();
                 LOGGER.info("Server started on {}:{}", host, port);
             } catch (IOException e) {
                 LOGGER.error("Cannot start server on {}:{}", host, port, e);
-                runningFlag.set(false);
+                running = false;
             }
 
             try {
-                LOGGER.info("Start processing keys loop");
-                while (runningFlag.get()) {
-                    processKeys();
-                }
+                LOGGER.info("Start processing keys");
+                processKeys();
             } catch (IOException e) {
                 LOGGER.error("An error occurs while processing keys", e);
-                runningFlag.set(false);
+            } finally {
+                stop();
             }
-
-            stop();
-
-            LOGGER.info("The server has been stopped");
         }
     }
 
     @Override
     public void stop() {
-        if (!runningFlag.get()) {
-            LOGGER.warn("The server is not started yet.");
+        if (!running) {
+            LOGGER.warn("The server is not started");
         } else {
-            runningFlag.set(false);
             try {
+                running = false;
                 connections.keySet().forEach(this::disconnect);
                 serverSocket.close();
+                LOGGER.info("The server has been successfully stopped");
             } catch (IOException e) {
                 LOGGER.error("Cannot close socket", e);
             }
@@ -100,27 +97,29 @@ public class TcpNioServerProcessor extends ServerProcessor {
     }
 
     private void processKeys() throws IOException {
-        switchKeyInterestOps();
-        int numKeys = selector.select();
+        while (running) {
+            NioUtils.switchKeyInterestOps(switchTasks);
 
-        if (numKeys > 0) {
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-            Iterator<SelectionKey> iter = selectedKeys.iterator();
+            int numKeys = selector.select();
+            if (numKeys > 0) {
+                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                Iterator<SelectionKey> iter = selectedKeys.iterator();
 
-            while (iter.hasNext()) {
-                SelectionKey key = iter.next();
-                iter.remove();
+                while (iter.hasNext()) {
+                    SelectionKey key = iter.next();
+                    iter.remove();
 
-                if (!key.isValid()) {
-                    continue;
-                }
+                    if (!key.isValid()) {
+                        continue;
+                    }
 
-                if (key.isAcceptable()) {
-                    register(key);
-                } else if (key.isReadable()) {
-                    read(key);
-                } else if (key.isWritable()) {
-                    write(key);
+                    if (key.isAcceptable()) {
+                        register(key);
+                    } else if (key.isReadable()) {
+                        read(key);
+                    } else if (key.isWritable()) {
+                        write(key);
+                    }
                 }
             }
         }
@@ -188,18 +187,5 @@ public class TcpNioServerProcessor extends ServerProcessor {
                 LOGGER.error("Cannot close connection", e);
             }
         }
-    }
-
-    private int switchKeyInterestOps() {
-        SwitchKeyInterestOpsTask task;
-        int switchedCount = 0;
-        while ((task = switchTasks.poll()) != null) {
-            SelectionKey key = task.getKey();
-            if (key != null && key.isValid()) {
-                key.interestOps(task.getOps());
-                switchedCount++;
-            }
-        }
-        return switchedCount;
     }
 }

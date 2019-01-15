@@ -4,7 +4,6 @@ import org.artb.chat.common.Lifecycle;
 import org.artb.chat.server.core.event.ConnectionEvent;
 
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 
@@ -12,7 +11,7 @@ public abstract class ServerProcessor implements Lifecycle {
     protected final String host;
     protected final int port;
 
-    protected final AtomicBoolean runningFlag = new AtomicBoolean();
+    protected volatile boolean running;
 
     /* (something) -> { } is a function for default listeners to avoid nulls */
     protected Consumer<ConnectionEvent> connectionEventListener = (event) -> { };

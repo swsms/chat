@@ -2,6 +2,7 @@ package org.artb.chat.client.core.processor.tcpnio;
 
 import org.artb.chat.client.core.processor.ClientProcessor;
 import org.artb.chat.common.connection.BufferedConnection;
+import org.artb.chat.common.connection.tcpnio.NioUtils;
 import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
 import org.slf4j.Logger;
@@ -56,9 +57,7 @@ public class TcpNioClientProcessor extends ClientProcessor {
             }
 
             try {
-                while (running) {
-                    processKeys();
-                }
+                processKeys();
             } catch (IOException e) {
                 LOGGER.error("An error occurs while processing keys", e);
             } finally {
@@ -67,7 +66,7 @@ public class TcpNioClientProcessor extends ClientProcessor {
         }
     }
 
-    public void stop() {
+    public synchronized void stop() {
         try {
             running = false;
             if (connection != null) {
@@ -86,28 +85,30 @@ public class TcpNioClientProcessor extends ClientProcessor {
         connection.notification();
     }
 
-    protected void processKeys() throws IOException {
-        switchKeyInterestOps();
-        int numKeys = selector.select();
+    private void processKeys() throws IOException {
+        while (running) {
+            NioUtils.switchKeyInterestOps(switchTasks);
 
-        if (numKeys > 0) {
-            Set<SelectionKey> selectedKeys = selector.selectedKeys();
-            Iterator<SelectionKey> iter = selectedKeys.iterator();
+            int numKeys = selector.select();
+            if (numKeys > 0) {
+                Set<SelectionKey> selectedKeys = selector.selectedKeys();
+                Iterator<SelectionKey> iter = selectedKeys.iterator();
 
-            while (iter.hasNext()) {
-                SelectionKey key = iter.next();
-                iter.remove();
+                while (iter.hasNext()) {
+                    SelectionKey key = iter.next();
+                    iter.remove();
 
-                if (!key.isValid()) {
-                    continue;
-                }
+                    if (!key.isValid()) {
+                        continue;
+                    }
 
-                if (key.isReadable()) {
-                    read();
-                } else if (key.isWritable()) {
-                    write();
-                } else if (key.isConnectable()) {
-                    connect();
+                    if (key.isReadable()) {
+                        read();
+                    } else if (key.isWritable()) {
+                        write();
+                    } else if (key.isConnectable()) {
+                        connect();
+                    }
                 }
             }
         }
@@ -142,18 +143,5 @@ public class TcpNioClientProcessor extends ClientProcessor {
             LOGGER.error("Cannot connect to {}:{}", serverHost, serverPort, e);
             running = false;
         }
-    }
-
-    private int switchKeyInterestOps() {
-        SwitchKeyInterestOpsTask task;
-        int switchedCount = 0;
-        while ((task = switchTasks.poll()) != null) {
-            SelectionKey key = task.getKey();
-            if (key != null && key.isValid()) {
-                key.interestOps(task.getOps());
-                switchedCount++;
-            }
-        }
-        return switchedCount;
     }
 }
