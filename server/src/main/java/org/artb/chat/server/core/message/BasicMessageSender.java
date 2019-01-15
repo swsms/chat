@@ -35,19 +35,12 @@ public class BasicMessageSender implements MessageSender {
     }
 
     @Override
-    public void sendPersonal(UUID id, Message msg) {
-        sendPersonal(id, Collections.singletonList(msg));
-    }
-
-    @Override
-    public void sendPersonal(UUID targetId, List<Message> msgList) {
-        msgList.forEach(msg -> {
-            try {
-                String jsonMsg = Utils.serialize(msg);
-                consumer.accept(targetId, jsonMsg);
-            } catch (IOException e) {
-                LOGGER.error("Cannot send message: {} to {}", msg, targetId);
-            }
-        });
+    public void sendPersonal(UUID userId, Message msg) {
+        try {
+            String jsonMsg = Utils.serialize(msg);
+            consumer.accept(userId, jsonMsg);
+        } catch (IOException e) {
+            LOGGER.error("Cannot send message: {} to {}", msg, userId, e);
+        }
     }
 }

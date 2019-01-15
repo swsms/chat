@@ -116,15 +116,13 @@ public class MessageProcessor implements Runnable {
         }
 
         List<Message> history = historyStorage.history();
+        history.forEach(msg -> sender.sendPersonal(clientId, msg));
         LOGGER.info("Sent history with size {} entries.", history.size());
-        sender.sendPersonal(clientId, history);
 
         String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
         sender.sendBroadcast(Message.newServerMessage(readyText));
 
         String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
-        Message loggedMsg = Message.newServerMessage(loggedText);
-
-        sender.sendPersonal(clientId, loggedMsg);
+        sender.sendPersonal(clientId, Message.newServerMessage(loggedText));
     }
 }

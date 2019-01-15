@@ -45,7 +45,6 @@ public class ChatServer implements Lifecycle {
         this.history = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
         this.users = new InMemoryAuthUserStorage();
         this.sender = new BasicMessageSender(users, server::acceptData, history);
-
         this.factory = new CommandFactory(sender, users, server::disconnect);
 
         this.messageProcessors = Stream
