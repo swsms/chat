@@ -1,4 +1,4 @@
-package org.artb.chat.common.settings;
+package org.artb.chat.common.configs;
 
 import com.beust.jcommander.Parameter;
 

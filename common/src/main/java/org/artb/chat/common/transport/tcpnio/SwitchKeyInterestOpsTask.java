@@ -1,4 +1,4 @@
-package org.artb.chat.common.connection.tcpnio;
+package org.artb.chat.common.transport.tcpnio;
 
 import java.nio.channels.SelectionKey;
 

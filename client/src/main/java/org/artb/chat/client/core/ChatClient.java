@@ -1,13 +1,13 @@
 package org.artb.chat.client.core;
 
-import org.artb.chat.client.core.processor.ClientProcessor;
-import org.artb.chat.client.core.processor.tcpnio.TcpNioClientProcessor;
+import org.artb.chat.client.core.processor.transport.ClientProcessor;
+import org.artb.chat.client.core.processor.transport.tcpnio.TcpNioClientProcessor;
 import org.artb.chat.client.ui.UIConsoleDisplay;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Lifecycle;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.settings.Config;
+import org.artb.chat.common.configs.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,10 +1,10 @@
-package org.artb.chat.client.core.processor.tcpnio;
+package org.artb.chat.client.core.processor.transport.tcpnio;
 
-import org.artb.chat.client.core.processor.ClientProcessor;
-import org.artb.chat.common.connection.BufferedConnection;
-import org.artb.chat.common.connection.tcpnio.NioUtils;
-import org.artb.chat.common.connection.tcpnio.SwitchKeyInterestOpsTask;
-import org.artb.chat.common.connection.tcpnio.TcpNioConnection;
+import org.artb.chat.client.core.processor.transport.ClientProcessor;
+import org.artb.chat.common.transport.BufferedConnection;
+import org.artb.chat.common.transport.tcpnio.NioUtils;
+import org.artb.chat.common.transport.tcpnio.SwitchKeyInterestOpsTask;
+import org.artb.chat.common.transport.tcpnio.TcpNioConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

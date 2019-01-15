@@ -1,4 +1,4 @@
-package org.artb.chat.server.core.storage;
+package org.artb.chat.server.core.storage.history;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.message.Message;

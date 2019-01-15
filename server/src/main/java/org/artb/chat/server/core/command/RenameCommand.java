@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
-import static org.artb.chat.server.core.message.MsgConstants.USER_IS_RENAMED_TEMPLATE;
+import static org.artb.chat.server.core.message.MessageConstants.USER_IS_RENAMED_TEMPLATE;
 
 public class RenameCommand implements Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(RenameCommand.class);

@@ -1,17 +1,18 @@
-package org.artb.chat.client.core.processor;
+package org.artb.chat.client.core.processor.transport;
 
+import org.artb.chat.client.core.processor.DisconnectHandler;
 import org.artb.chat.common.Lifecycle;
 import java.util.function.Consumer;
 
+/**
+ * Represents the transport layer for the client. To add a new transport you need extend it.
+ */
 public abstract class ClientProcessor implements Lifecycle {
     protected final String serverHost;
     protected final int serverPort;
 
     protected volatile boolean running;
 
-    /**
-     * Potentially the fields below can be set after the processor starts in a separated thread
-     */
     protected Consumer<String> receivedDataListener = (data) -> { };
     protected DisconnectHandler handler = DisconnectHandler::nothing;
 

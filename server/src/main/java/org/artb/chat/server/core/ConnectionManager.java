@@ -8,10 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.artb.chat.server.core.message.MsgConstants.LEFT_CHAT_TEMPLATE;
-import static org.artb.chat.server.core.message.MsgConstants.REQUEST_NAME_TEXT;
+import static org.artb.chat.server.core.message.MessageConstants.LEFT_CHAT_TEMPLATE;
+import static org.artb.chat.server.core.message.MessageConstants.REQUEST_NAME_TEXT;
 
 /**
  * Manage users connected and disconnected to the chat.

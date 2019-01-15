@@ -5,7 +5,7 @@ import org.artb.chat.server.core.message.MessageSender;
 
 import java.util.UUID;
 
-import static org.artb.chat.server.core.message.MsgConstants.NOT_VALID_COMMAND_TEMPLATE;
+import static org.artb.chat.server.core.message.MessageConstants.NOT_VALID_COMMAND_TEMPLATE;
 
 public class NotValidCommand implements Command {
     private final UUID userId;

@@ -1,4 +1,4 @@
-package org.artb.chat.common.connection;
+package org.artb.chat.common.transport;
 
 import org.artb.chat.common.Identifiable;
 

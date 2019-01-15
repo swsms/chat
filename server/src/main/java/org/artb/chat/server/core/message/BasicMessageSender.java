@@ -2,7 +2,7 @@ package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.DataReceiver;
+import org.artb.chat.server.core.transport.tcpnio.DataReceiver;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.slf4j.Logger;

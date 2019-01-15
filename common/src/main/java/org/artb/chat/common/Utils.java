@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.settings.SettingsParseException;
+import org.artb.chat.common.configs.SettingsParseException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;

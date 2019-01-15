@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.artb.chat.server.core.message.MsgConstants.*;
+import static org.artb.chat.server.core.message.MessageConstants.*;
 
 public class UsersCommand implements Command {
     private final UUID userId;

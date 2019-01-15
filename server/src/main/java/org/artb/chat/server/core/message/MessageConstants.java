@@ -1,8 +1,8 @@
 package org.artb.chat.server.core.message;
 
-public final class MsgConstants {
+public final class MessageConstants {
 
-    private MsgConstants() { }
+    private MessageConstants() { }
 
     public static final String REQUEST_NAME_TEXT = "Welcome to the chat! Please, enter a name to start chatting.";
     public static final String NAME_DECLINED_TEXT = "Incorrect name, try another one.";

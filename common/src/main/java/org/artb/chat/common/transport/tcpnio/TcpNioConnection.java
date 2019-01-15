@@ -1,7 +1,7 @@
-package org.artb.chat.common.connection.tcpnio;
+package org.artb.chat.common.transport.tcpnio;
 
 import org.artb.chat.common.Constants;
-import org.artb.chat.common.connection.Connection;
+import org.artb.chat.common.transport.Connection;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,4 +1,4 @@
-package org.artb.chat.server.core;
+package org.artb.chat.server.core.transport.tcpnio;
 
 import java.util.UUID;
 

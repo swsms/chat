@@ -17,7 +17,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 
-import static org.artb.chat.server.core.message.MsgConstants.*;
+import static org.artb.chat.server.core.message.MessageConstants.*;
 
 public class MessageProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProcessor.class);

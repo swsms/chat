@@ -1,9 +1,10 @@
-package org.artb.chat.common.message;
+package org.artb.chat.common;
 
 import org.artb.chat.common.Utils;
-import org.artb.chat.common.settings.Config;
-import org.artb.chat.common.settings.ServerConfig;
-import org.artb.chat.common.settings.SettingsParseException;
+import org.artb.chat.common.configs.Config;
+import org.artb.chat.common.configs.ServerConfig;
+import org.artb.chat.common.configs.SettingsParseException;
+import org.artb.chat.common.message.Message;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

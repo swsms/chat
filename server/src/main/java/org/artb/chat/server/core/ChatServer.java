@@ -1,13 +1,10 @@
-package org.artb.chat.server;
+package org.artb.chat.server.core;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.Lifecycle;
-import org.artb.chat.common.settings.ServerConfig;
-import org.artb.chat.server.core.ConnectionManager;
-import org.artb.chat.server.core.ServerProcessor;
+import org.artb.chat.common.configs.ServerConfig;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.event.ConnectionEvent;
-import org.artb.chat.server.core.ReceivedData;
 import org.artb.chat.server.core.message.BasicMessageSender;
 import org.artb.chat.server.core.message.MessageProcessor;
 import org.artb.chat.server.core.message.MessageSender;
@@ -15,7 +12,8 @@ import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InMemoryAuthUserStorage;
 import org.artb.chat.server.core.storage.history.HistoryStorage;
 import org.artb.chat.server.core.storage.history.InMemoryHistoryStorage;
-import org.artb.chat.server.core.tcpnio.TcpNioServerProcessor;
+import org.artb.chat.server.core.transport.ServerProcessor;
+import org.artb.chat.server.core.transport.tcpnio.TcpNioServerProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
