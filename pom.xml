@@ -12,6 +12,7 @@
         <module>server</module>
         <module>client</module>
         <module>common</module>
+        <module>bot</module>
     </modules>
 
     <properties>
@@ -54,8 +55,13 @@
                 <version>1.2.3</version>
             </dependency>
             <dependency>
-                <groupId>org.artb.chat</groupId>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -67,6 +73,11 @@
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
                 <version>1.72</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.8.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

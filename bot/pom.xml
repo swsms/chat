@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>client</artifactId>
+    <artifactId>bot</artifactId>
 
     <dependencies>
         <dependency>
@@ -34,12 +34,16 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
     </dependencies>
 
     <build>
-        <finalName>chat-client-${project.version}</finalName>
+        <finalName>chat-bot-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -51,7 +55,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>org.artb.chat.client.ClientRunner</mainClass>
+                            <mainClass>org.artb.chat.bot.BotRunner</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

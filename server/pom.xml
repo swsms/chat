@@ -37,7 +37,7 @@
             <artifactId>logback-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.artb.chat</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>common</artifactId>
         </dependency>
     </dependencies>
