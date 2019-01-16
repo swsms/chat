@@ -13,7 +13,7 @@ public final class MessageConstants {
     public static final String LEFT_CHAT_TEMPLATE = "User %s has left the chat.";
     public static final String READY_TO_CHATTING_TEMPLATE = "User %s is ready to chatting.";
     public static final String USER_IS_RENAMED_TEMPLATE = "User %s is renamed to %s.";
-    public static final String LIST_OF_USERS_TEMPLATE = "There is %d currently connected users:\n%s";
+    public static final String LIST_OF_USERS_TEMPLATE = "There are %d currently connected users:\n%s";
 
     public static final String NOT_VALID_COMMAND_TEMPLATE =
             "%s is not a valid command. In the chat, all messages that start with " +

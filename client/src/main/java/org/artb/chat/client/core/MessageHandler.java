@@ -2,6 +2,7 @@ package org.artb.chat.client.core;
 
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Utils;
+import org.artb.chat.common.command.CommandInfo;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.message.MessageType;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class MessageHandler implements Runnable {
             }
             try {
                 if (receivedData != null) {
-                    List<Message> messages = Utils.deserializeList(receivedData);
+                    List<Message> messages = Utils.deserializeMessageList(receivedData);
                     messages.forEach(this::handle);
                 }
             } catch (IOException e) {
@@ -54,22 +55,33 @@ public class MessageHandler implements Runnable {
         }
     }
 
+    /**
+     * Can be replaced with handlers (just like commands) in future
+     */
     private void handle(Message msg) {
-        switch (msg.getType()) {
-            case SUCCESS_AUTH:
-                authenticated.set(true);
-                display.print(msg.getContent());
-                break;
-            case USER_LIST:
-                List<String> users = Utils.parseList(msg.getContent());
-                display.printUserList(users);
-                break;
-            case USER_TEXT:
-                LocalDateTime when = Utils.toLocalTimeZoneWithoutNano(msg.getCreated());
-                display.printUserText(when, msg.getSender(), msg.getContent());
-                break;
-            default:
-                display.print(msg.getContent());
+        try {
+            switch (msg.getType()) {
+                case SUCCESS_AUTH:
+                    authenticated.set(true);
+                    display.print(msg.getContent());
+                    break;
+                case USER_LIST:
+                    List<String> users = Utils.deserializeList(msg.getContent(), String.class);
+                    display.printUserList(users);
+                    break;
+                case USER_TEXT:
+                    LocalDateTime when = Utils.toLocalTimeZoneWithoutNano(msg.getCreated());
+                    display.printUserText(when, msg.getSender(), msg.getContent());
+                    break;
+                case COMMAND_LIST:
+                    List<CommandInfo> commands = Utils.deserializeList(msg.getContent(), CommandInfo.class);
+                    display.printHelp(commands);
+                    break;
+                default:
+                    display.print(msg.getContent());
+            }
+        } catch (IOException e) {
+            LOGGER.warn("Cannot extract content from message {}, cause {}", msg, e.getMessage());
         }
     }
 

@@ -59,7 +59,7 @@ public class MessageProcessor implements Runnable {
 
             final List<Message> incomingMessages;
             try {
-                incomingMessages = Utils.deserializeList(receivedData.getRawData());
+                incomingMessages = Utils.deserializeMessageList(receivedData.getRawData());
             } catch (IOException e) {
                 LOGGER.error("Cannot deserialize message: {}", receivedData.getRawData(), e);
                 return;

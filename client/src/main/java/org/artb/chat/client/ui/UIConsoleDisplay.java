@@ -1,7 +1,10 @@
 package org.artb.chat.client.ui;
 
+import org.artb.chat.common.command.CommandInfo;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.artb.chat.common.message.MessageConstants.LIST_OF_USERS_TEMPLATE;
 import static org.artb.chat.common.message.MessageConstants.USER_ALONE_IN_CHAT_TEXT;
@@ -21,6 +24,13 @@ public class UIConsoleDisplay implements UIDisplay {
                 String.format(LIST_OF_USERS_TEMPLATE, users.size(), joinedUsers) :
                 USER_ALONE_IN_CHAT_TEXT;
         print(text);
+    }
+
+    @Override
+    public void printHelp(List<CommandInfo> commands) {
+        print(commands.stream()
+                .map(cmd -> cmd.getCommand() + "\t" + cmd.getDescription())
+                .collect(Collectors.joining("\n")));
     }
 
     @Override

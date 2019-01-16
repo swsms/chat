@@ -1,6 +1,7 @@
 package org.artb.chat.common;
 
 import org.artb.chat.common.Utils;
+import org.artb.chat.common.command.CommandInfo;
 import org.artb.chat.common.configs.Config;
 import org.artb.chat.common.configs.ServerConfig;
 import org.artb.chat.common.configs.SettingsParseException;
@@ -59,11 +60,11 @@ public class UtilsTest {
 
 
     @Test
-    public void testDeserializeList() throws IOException {
+    public void testDeserializeMessageList() throws IOException {
         String json =
                 "[{\"content\":\"The name was accepted.\",\"type\":\"SERVER_TEXT\",\"sender\":\"server\"}, " +
                 "{\"content\":\"The name was accepted.\",\"type\":\"SERVER_TEXT\",\"sender\":\"server\"}]";
-        List<Message> messageList = Utils.deserializeList(json);
+        List<Message> messageList = Utils.deserializeMessageList(json);
         assertEquals(messageList.size(), 2);
     }
 
@@ -75,7 +76,7 @@ public class UtilsTest {
                 "{\"content\":\"Cia\"}");
 
         String jsonArray = Utils.createBatch(jsons);
-        List<Message> messages = Utils.deserializeList(jsonArray);
+        List<Message> messages = Utils.deserializeMessageList(jsonArray);
 
         assertEquals(messages.size(), 3);
     }
@@ -98,5 +99,24 @@ public class UtilsTest {
         List<Integer> newFamousNumbers = Utils.createNewListWithMessage(0, famousNumbers);
         assertEquals(newFamousNumbers.size(), famousNumbers.size() + 1);
         assertEquals((int) newFamousNumbers.get(0), 0);
+    }
+
+    @Test
+    public void testSerializeList() throws IOException {
+        List<CommandInfo> commands = Arrays.asList(
+                new CommandInfo("/help", "help"),
+                new CommandInfo("/exit", "exit")
+        );
+
+        String json = Utils.serializeList(commands);
+
+        assertNotNull(json);
+    }
+
+    @Test
+    public void testDeserializeList() throws IOException {
+        String json = "[{\"command\":\"/help\",\"description\":\"help\"},{\"command\":\"/exit\",\"description\":\"exit\"}]";
+        List<CommandInfo> commands = Utils.deserializeList(json, CommandInfo.class);
+        assertEquals(commands.size(), 2);
     }
 }

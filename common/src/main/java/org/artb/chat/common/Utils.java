@@ -2,8 +2,10 @@ package org.artb.chat.common;
 
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.configs.SettingsParseException;
 
@@ -35,7 +37,7 @@ public final class Utils {
         return objectMapper.readValue(json, Message.class);
     }
 
-    public static List<Message> deserializeList(String json) throws IOException {
+    public static List<Message> deserializeMessageList(String json) throws IOException {
         return Arrays.asList(objectMapper.readValue(
                 json.replaceAll("\\]\\[", ","),
                 Message[].class));
@@ -82,5 +84,15 @@ public final class Utils {
     public static List<String> parseList(String stringList) {
         String values = stringList.substring(1, stringList.length() - 1);
         return Arrays.asList(values.split("\\s*,\\s*"));
+    }
+
+    public static <T> String serializeList(List<T> items) throws IOException {
+        return objectMapper.writeValueAsString(items);
+    }
+
+
+    public static <T> List<T> deserializeList(String json, Class<T> clazz) throws IOException {
+        CollectionType type = objectMapper.getTypeFactory().constructCollectionType(ArrayList.class, clazz);
+        return objectMapper.readValue(json, type);
     }
 }

@@ -9,5 +9,6 @@ public enum MessageType {
     NAME_DECLINED,
     RENAMED,
     INCORRECT_COMMAND,
-    USER_LIST
+    USER_LIST,
+    COMMAND_LIST
 }
