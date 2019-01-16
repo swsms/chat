@@ -11,8 +11,6 @@ import java.time.ZonedDateTime;
 public class Message {
 
     private String content;
-    private Type type;
-    private String sender;
 
     /**
      * This field stores where the message was actually processed on server.
@@ -20,33 +18,17 @@ public class Message {
      */
     @JsonSerialize(using = ZdtFieldSerializer.class)
     @JsonDeserialize(using = ZdtFieldDeserializer.class)
-    private ZonedDateTime served;
+    private ZonedDateTime created;
+    private MessageType type;
+    private String sender;
 
     public Message() { }
 
-    private Message(String content, Type type, String sender) {
+    public Message(String content, MessageType type, String sender) {
         this.content = content;
         this.type = type;
         this.sender = sender;
-    }
-
-    public static Message newServerMessage(String content) {
-        return new Message(content, Type.SERVER_TEXT, "server");
-    }
-
-    public static Message newUserMessage(String content, String sender) {
-        return new Message(content, Type.USER_TEXT, sender);
-    }
-
-    /**
-     * It is used on a client side, the server knows actual client's name
-     */
-    public static Message newUserMessage(String content) {
-        return new Message(content, Type.USER_TEXT, "client");
-    }
-
-    public enum Type {
-        SERVER_TEXT, USER_TEXT
+        this.created = ZonedDateTime.now();
     }
 
     public String getContent() {
@@ -57,11 +39,15 @@ public class Message {
         this.content = content;
     }
 
-    public Type getType() {
+    public void setCreated(ZonedDateTime created) {
+        this.created = created;
+    }
+
+    public MessageType getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public void setType(MessageType type) {
         this.type = type;
     }
 
@@ -73,12 +59,8 @@ public class Message {
         this.sender = sender;
     }
 
-    public ZonedDateTime getServed() {
-        return served;
-    }
-
-    public void setServed(ZonedDateTime served) {
-        this.served = served;
+    public ZonedDateTime getCreated() {
+        return created;
     }
 
     @Override

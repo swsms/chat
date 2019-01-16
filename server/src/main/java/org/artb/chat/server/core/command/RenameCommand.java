@@ -1,6 +1,7 @@
 package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.message.Message;
+import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
 import org.artb.chat.server.core.storage.auth.InvalidNameException;
@@ -9,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
+import static org.artb.chat.server.core.message.MessageConstants.SUCCESSFULLY_RENAMED;
 import static org.artb.chat.server.core.message.MessageConstants.USER_IS_RENAMED_TEMPLATE;
 
 public class RenameCommand implements Command {
@@ -38,10 +41,11 @@ public class RenameCommand implements Command {
             storage.upsertUserName(userId, newName);
 
             String text = String.format(USER_IS_RENAMED_TEMPLATE, oldName, newName);
-            sender.sendBroadcast(Message.newServerMessage(text));
+            sender.sendPersonal(userId, newServerMessage(SUCCESSFULLY_RENAMED, MessageType.RENAMED));
+            sender.sendBroadcast(newServerMessage(text));
         } catch (InvalidNameException e) {
             LOGGER.info(e.getMessage());
-            sender.sendPersonal(userId, Message.newServerMessage(e.getMessage()));
+            sender.sendPersonal(userId, newServerMessage(e.getMessage(), MessageType.NAME_DECLINED));
         }
     }
 }

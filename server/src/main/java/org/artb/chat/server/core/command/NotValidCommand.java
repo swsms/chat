@@ -1,10 +1,12 @@
 package org.artb.chat.server.core.command;
 
 import org.artb.chat.common.message.Message;
+import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.message.MessageSender;
 
 import java.util.UUID;
 
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
 import static org.artb.chat.server.core.message.MessageConstants.NOT_VALID_COMMAND_TEMPLATE;
 
 public class NotValidCommand implements Command {
@@ -21,6 +23,6 @@ public class NotValidCommand implements Command {
     @Override
     public void execute() {
         String text = String.format(NOT_VALID_COMMAND_TEMPLATE, enteredContent);
-        sender.sendPersonal(userId, Message.newServerMessage(text));
+        sender.sendPersonal(userId, newServerMessage(text, MessageType.INCORRECT_COMMAND));
     }
 }

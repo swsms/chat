@@ -1,6 +1,6 @@
 package org.artb.chat.server.core;
 
-import org.artb.chat.common.message.Message;
+import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.event.ConnectionEvent;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
 import static org.artb.chat.server.core.message.MessageConstants.LEFT_CHAT_TEMPLATE;
 import static org.artb.chat.server.core.message.MessageConstants.REQUEST_NAME_TEXT;
 
@@ -47,13 +48,15 @@ public class ConnectionManager implements Runnable {
 
             switch (event.getType()) {
                 case CONNECTED:
-                    sender.sendPersonal(event.getClientId(), Message.newServerMessage(REQUEST_NAME_TEXT));
+                    sender.sendPersonal(
+                            event.getClientId(),
+                            newServerMessage(REQUEST_NAME_TEXT, MessageType.NEED_AUTH));
                     break;
                 case DISCONNECTED:
                     if (storage.authenticated(event.getClientId())) {
                         String user = storage.removeUser(event.getClientId());
                         String text = String.format(LEFT_CHAT_TEMPLATE, user);
-                        sender.sendBroadcast(Message.newServerMessage(text));
+                        sender.sendBroadcast(newServerMessage(text));
                     }
                     break;
             }

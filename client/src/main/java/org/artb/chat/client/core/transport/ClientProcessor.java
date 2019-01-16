@@ -1,6 +1,5 @@
-package org.artb.chat.client.core.processor.transport;
+package org.artb.chat.client.core.transport;
 
-import org.artb.chat.client.core.processor.DisconnectHandler;
 import org.artb.chat.common.Lifecycle;
 import java.util.function.Consumer;
 

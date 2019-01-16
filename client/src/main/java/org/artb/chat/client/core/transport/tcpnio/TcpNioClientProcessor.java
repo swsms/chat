@@ -1,6 +1,6 @@
-package org.artb.chat.client.core.processor.transport.tcpnio;
+package org.artb.chat.client.core.transport.tcpnio;
 
-import org.artb.chat.client.core.processor.transport.ClientProcessor;
+import org.artb.chat.client.core.transport.ClientProcessor;
 import org.artb.chat.common.transport.BufferedConnection;
 import org.artb.chat.common.transport.tcpnio.NioUtils;
 import org.artb.chat.common.transport.tcpnio.SwitchKeyInterestOpsTask;

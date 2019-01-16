@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
 import static org.artb.chat.server.core.message.MessageConstants.*;
 
 public class UsersCommand implements Command {
@@ -33,6 +34,6 @@ public class UsersCommand implements Command {
                 String.format(LIST_OF_USERS_TEMPLATE, users.size(), joinedUsers) :
                 USER_ALONE_IN_CHAT_TEXT;
 
-        sender.sendPersonal(userId, Message.newServerMessage(text));
+        sender.sendPersonal(userId, newServerMessage(text));
     }
 }

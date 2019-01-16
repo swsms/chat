@@ -22,13 +22,14 @@ public class MessageReaderTest {
                 "Hello!\nhow are you today?\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10";
 
         InputStream clientInput = new ByteArrayInputStream(inputData.getBytes());
-        AtomicBoolean runningFlag = new AtomicBoolean(true);
         ConcurrentLinkedQueue<Message> queue = new ConcurrentLinkedQueue<>();
 
-        MessageReader reader = new MessageReader(queue::add, clientInput);
+        MessageReader reader = new MessageReader(queue::add, clientInput, new AtomicBoolean());
         Thread readerThread = new Thread(reader);
+
         readerThread.start();
-        readerThread.join();
+        Thread.sleep(3000L);
+        reader.stop();
 
         List<String> inputDataParts = Arrays.asList(inputData.split("\\n+"));
         assertEquals(inputDataParts.size(), queue.size());

@@ -2,8 +2,6 @@ package org.artb.chat.server.core.storage.history;
 
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.server.core.storage.history.HistoryStorage;
-import org.artb.chat.server.core.storage.history.InMemoryHistoryStorage;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -12,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
+import static org.artb.chat.common.message.MessageFactory.newUserMessage;
 import static org.testng.Assert.*;
 
 public class InMemoryHistoryStorageStorageTest {
@@ -20,13 +20,13 @@ public class InMemoryHistoryStorageStorageTest {
     public void testAddInSingleElementQueue() {
         HistoryStorage storage = new InMemoryHistoryStorage(1);
 
-        storage.add(Message.newUserMessage("Hello"));
+        storage.add(newUserMessage("Hello"));
 
         List<Message> history = storage.history();
         assertEquals(history.size(), 1);
         assertEquals(history.get(0).getContent(), "Hello");
 
-        storage.add(Message.newUserMessage("Hi"));
+        storage.add(newUserMessage("Hi"));
 
         history = storage.history();
         assertEquals(history.size(), 1);
@@ -38,7 +38,7 @@ public class InMemoryHistoryStorageStorageTest {
         HistoryStorage storage = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
 
         for (int i = 0; i < Constants.HISTORY_SIZE; i++) {
-            storage.add(Message.newUserMessage("Hello" + i));
+            storage.add(newUserMessage("Hello" + i));
         }
 
         List<Message> history = storage.history();
@@ -46,7 +46,7 @@ public class InMemoryHistoryStorageStorageTest {
         assertEquals(history.get(0).getContent(), "Hello0");
         assertEquals(history.get(99).getContent(), "Hello99");
 
-        storage.add(Message.newUserMessage("Hi"));
+        storage.add(newUserMessage("Hi"));
 
         history = storage.history();
         assertEquals(history.size(), 100);
@@ -64,7 +64,7 @@ public class InMemoryHistoryStorageStorageTest {
                 new Thread(() -> {
                     for (int i = 0; i < 100_000; i++) {
                         int num = counter.incrementAndGet();
-                        storage.add(Message.newServerMessage(Objects.toString(num)));
+                        storage.add(newServerMessage(Objects.toString(num)));
                     }
         })).limit(10).collect(Collectors.toList());
 

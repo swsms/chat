@@ -1,4 +1,4 @@
-package org.artb.chat.client.core.processor;
+package org.artb.chat.client.core.transport;
 
 @FunctionalInterface
 public interface DisconnectHandler {

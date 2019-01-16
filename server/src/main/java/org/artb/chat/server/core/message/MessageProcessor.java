@@ -2,6 +2,8 @@ package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.message.Message;
+import org.artb.chat.common.message.MessageFactory;
+import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
 import org.artb.chat.server.core.command.CommandParsingException;
@@ -17,6 +19,8 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 
+import static org.artb.chat.common.message.MessageFactory.newServedUserMessage;
+import static org.artb.chat.common.message.MessageFactory.newServerMessage;
 import static org.artb.chat.server.core.message.MessageConstants.*;
 
 public class MessageProcessor implements Runnable {
@@ -71,7 +75,8 @@ public class MessageProcessor implements Runnable {
                     if (msgContent.startsWith(Command.CMD_CHAR)) {
                         createAndExecuteCommand(userId, msgContent);
                     } else {
-                        broadcastProcessedMessage(userId, msgContent);
+                        String userName = userStorage.getUserName(userId);
+                        sender.sendBroadcast(newServedUserMessage(msgContent, userName));
                     }
                 } else {
                     tryAuthenticate(userId, msgContent);
@@ -91,19 +96,8 @@ public class MessageProcessor implements Runnable {
             command.execute();
         } catch (CommandParsingException e) {
             LOGGER.warn("Cannot parse command: ", e.getMessage());
-            sender.sendPersonal(userId, Message.newServerMessage(NO_PARAMETERS_FOR_COMMAND));
+            sender.sendPersonal(userId, newServerMessage(CMD_NO_PARAMETERS, MessageType.INCORRECT_COMMAND));
         }
-    }
-
-    private void broadcastProcessedMessage(UUID id, String text) {
-        Message msg = new Message();
-
-        msg.setContent(text);
-        msg.setSender(userStorage.getUserName(id));
-        msg.setType(Message.Type.USER_TEXT);
-        msg.setServed(ZonedDateTime.now());
-
-        sender.sendBroadcast(msg);
     }
 
     private void tryAuthenticate(UUID clientId, String userName) {
@@ -111,7 +105,7 @@ public class MessageProcessor implements Runnable {
             userStorage.upsertUserName(clientId, userName);
         } catch (InvalidNameException e) {
             LOGGER.info(e.getMessage());
-            sender.sendPersonal(clientId, Message.newServerMessage(e.getMessage()));
+            sender.sendPersonal(clientId, newServerMessage(e.getMessage(), MessageType.NEED_AUTH));
             return;
         }
 
@@ -119,10 +113,10 @@ public class MessageProcessor implements Runnable {
         history.forEach(msg -> sender.sendPersonal(clientId, msg));
         LOGGER.info("Sent history with size {} entries.", history.size());
 
-        String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
-        sender.sendBroadcast(Message.newServerMessage(readyText));
-
         String loggedText = String.format(SUCCESSFULLY_LOGGED_TEMPLATE, userName);
-        sender.sendPersonal(clientId, Message.newServerMessage(loggedText));
+        sender.sendPersonal(clientId, newServerMessage(loggedText, MessageType.SUCCESS_AUTH));
+
+        String readyText = String.format(READY_TO_CHATTING_TEMPLATE, userName);
+        sender.sendBroadcast(newServerMessage(readyText));
     }
 }

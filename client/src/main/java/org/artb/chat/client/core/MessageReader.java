@@ -7,17 +7,23 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.artb.chat.common.message.MessageFactory.newAuthMessage;
+import static org.artb.chat.common.message.MessageFactory.newUserMessage;
+
 public class MessageReader implements Runnable {
 
     private final Scanner scanner;
     private final Consumer<Message> consumer;
     private volatile boolean running;
+    private AtomicBoolean authenticated;
 
     public MessageReader(
             Consumer<Message> consumer,
-            InputStream input) {
+            InputStream input,
+            AtomicBoolean authenticated) {
         this.consumer = consumer;
         this.scanner = new Scanner(input);
+        this.authenticated = authenticated;
     }
 
     @Override
@@ -25,7 +31,9 @@ public class MessageReader implements Runnable {
         running = true;
         while (running && scanner.hasNextLine()) {
             String messageText = scanner.nextLine();
-            Message msg = Message.newUserMessage(messageText);
+            Message msg = authenticated.get() ?
+                    newUserMessage(messageText) :
+                    newAuthMessage(messageText);
             consumer.accept(msg);
         }
     }

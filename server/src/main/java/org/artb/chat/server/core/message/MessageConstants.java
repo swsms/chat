@@ -5,10 +5,10 @@ public final class MessageConstants {
     private MessageConstants() { }
 
     public static final String REQUEST_NAME_TEXT = "Welcome to the chat! Please, enter a name to start chatting.";
-    public static final String NAME_DECLINED_TEXT = "Incorrect name, try another one.";
-    public static final String NAME_ALREADY_IN_USE_TEXT = "This name is already in use, try another one.";
     public static final String USER_ALONE_IN_CHAT_TEXT = "You are alone in the chat.";
-    public static final String NO_PARAMETERS_FOR_COMMAND = "You did not specify parameter(s) for the command.";
+    public static final String CMD_NO_PARAMETERS = "You did not specify parameter(s) for the command.";
+    public static final String SUCCESSFULLY_RENAMED = "You are successfully renamed.";
+
 
     public static final String LEFT_CHAT_TEMPLATE = "User %s has left the chat.";
     public static final String READY_TO_CHATTING_TEMPLATE = "User %s is ready to chatting.";
