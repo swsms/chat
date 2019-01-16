@@ -1,10 +1,14 @@
 package org.artb.chat.client.ui;
 
-import org.artb.chat.common.message.Message;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface UIDisplay {
 
-    void print(Message msg);
+    void printUserText(LocalDateTime when, String sender, String text);
 
-    void print(String notification);
+    void printUserList(List<String> users);
+
+    void print(String line);
+
 }

@@ -1,6 +1,5 @@
 package org.artb.chat.server.core.command;
 
-import org.artb.chat.common.message.Message;
 import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.message.MessageSender;
 import org.artb.chat.server.core.storage.auth.AuthUserStorage;
@@ -11,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.util.UUID;
 
 import static org.artb.chat.common.message.MessageFactory.newServerMessage;
-import static org.artb.chat.server.core.message.MessageConstants.SUCCESSFULLY_RENAMED;
-import static org.artb.chat.server.core.message.MessageConstants.USER_IS_RENAMED_TEMPLATE;
+import static org.artb.chat.common.message.MessageConstants.SUCCESSFULLY_RENAMED;
+import static org.artb.chat.common.message.MessageConstants.USER_IS_RENAMED_TEMPLATE;
 
 public class RenameCommand implements Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(RenameCommand.class);

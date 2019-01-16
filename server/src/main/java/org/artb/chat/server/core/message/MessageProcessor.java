@@ -2,7 +2,6 @@ package org.artb.chat.server.core.message;
 
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.MessageFactory;
 import org.artb.chat.common.message.MessageType;
 import org.artb.chat.server.core.command.Command;
 import org.artb.chat.server.core.command.CommandFactory;
@@ -15,13 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 
 import static org.artb.chat.common.message.MessageFactory.newServedUserMessage;
 import static org.artb.chat.common.message.MessageFactory.newServerMessage;
-import static org.artb.chat.server.core.message.MessageConstants.*;
+import static org.artb.chat.common.message.MessageConstants.*;
 
 public class MessageProcessor implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageProcessor.class);

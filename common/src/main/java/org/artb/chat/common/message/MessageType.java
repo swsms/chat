@@ -8,5 +8,6 @@ public enum MessageType {
     SUCCESS_AUTH,
     NAME_DECLINED,
     RENAMED,
-    INCORRECT_COMMAND
+    INCORRECT_COMMAND,
+    USER_LIST
 }

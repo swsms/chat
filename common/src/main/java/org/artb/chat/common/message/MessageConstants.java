@@ -1,4 +1,4 @@
-package org.artb.chat.server.core.message;
+package org.artb.chat.common.message;
 
 public final class MessageConstants {
 

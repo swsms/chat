@@ -75,4 +75,12 @@ public final class Utils {
             throw new SettingsParseException(e);
         }
     }
+
+    /**
+     * Input list format looks like [a, b, c, d]
+     */
+    public static List<String> parseList(String stringList) {
+        String values = stringList.substring(1, stringList.length() - 1);
+        return Arrays.asList(values.split("\\s*,\\s*"));
+    }
 }

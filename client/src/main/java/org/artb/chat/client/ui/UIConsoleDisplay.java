@@ -1,30 +1,30 @@
 package org.artb.chat.client.ui;
 
-import org.artb.chat.common.Utils;
-import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.MessageType;
-
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.util.List;
+
+import static org.artb.chat.common.message.MessageConstants.LIST_OF_USERS_TEMPLATE;
+import static org.artb.chat.common.message.MessageConstants.USER_ALONE_IN_CHAT_TEXT;
 
 public class UIConsoleDisplay implements UIDisplay {
 
     @Override
-    public void print(Message msg) {
-        if (msg.getType() != MessageType.USER_TEXT) {
-            print(msg.getContent());
-        } else {
-            LocalDateTime when = Utils.toLocalTimeZoneWithoutNano(msg.getCreated());
-            System.out.printf("[%s] %s: %s\n",
-                    when.toString().replace('T', ' '),
-                    msg.getSender(),
-                    msg.getContent());
-        }
+    public void printUserText(LocalDateTime when, String sender, String text) {
+        print(String.format("[%s] %s: %s",
+                when.toString().replace('T', ' '), sender, text));
     }
 
     @Override
-    public void print(String notification) {
-        System.out.println(notification);
+    public void printUserList(List<String> users) {
+        String joinedUsers = String.join("\n", users);
+        String text = users.size() != 1 ?
+                String.format(LIST_OF_USERS_TEMPLATE, users.size(), joinedUsers) :
+                USER_ALONE_IN_CHAT_TEXT;
+        print(text);
+    }
+
+    @Override
+    public void print(String line) {
+        System.out.println(line);
     }
 }

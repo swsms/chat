@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,22 +41,35 @@ public class MessageHandler implements Runnable {
             try {
                 receivedData = dataQueue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                LOGGER.error("Cannot take a message from queue", e);
                 return;
             }
             try {
                 if (receivedData != null) {
                     List<Message> messages = Utils.deserializeList(receivedData);
-                    messages.forEach(msg -> {
-                        if (msg.getType() == MessageType.SUCCESS_AUTH) {
-                            authenticated.set(true);
-                        }
-                        display.print(msg);
-                    });
+                    messages.forEach(this::handle);
                 }
             } catch (IOException e) {
                 LOGGER.error("Cannot deserialize data {}", receivedData, e);
             }
+        }
+    }
+
+    private void handle(Message msg) {
+        switch (msg.getType()) {
+            case SUCCESS_AUTH:
+                authenticated.set(true);
+                display.print(msg.getContent());
+                break;
+            case USER_LIST:
+                List<String> users = Utils.parseList(msg.getContent());
+                display.printUserList(users);
+                break;
+            case USER_TEXT:
+                LocalDateTime when = Utils.toLocalTimeZoneWithoutNano(msg.getCreated());
+                display.printUserText(when, msg.getSender(), msg.getContent());
+                break;
+            default:
+                display.print(msg.getContent());
         }
     }
 
