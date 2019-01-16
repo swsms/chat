@@ -9,12 +9,16 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 
 public class BotRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BotRunner.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(BotRunner.class);
+
+    private final static int BOTS_COUNT = 50;
+    private final static int MSG_COUNT = 50;
+    private final static int WAIT_MS = 500;
 
     public static void main(String[] args)  {
         try {
             Config config = Utils.parseFromArgsArray(args, Config.class);
-            BotManager manager = new BotManager(config, 2);
+            BotManager manager = new BotManager(config, BOTS_COUNT, MSG_COUNT, WAIT_MS);
             manager.start();
         } catch (SettingsParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);

@@ -85,8 +85,14 @@ public class TcpNioClientProcessor extends ClientProcessor {
 
     @Override
     public void acceptData(String data) {
-        connection.putInBuffer(data);
-        connection.notification();
+        synchronized (this) {
+            if (connection != null) {
+                connection.putInBuffer(data);
+                connection.notification();
+            } else {
+                LOGGER.warn("Cannot send {} for {}, connection is null", data);
+            }
+        }
     }
 
     private void processKeys() throws IOException {

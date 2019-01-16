@@ -56,8 +56,10 @@ public class TcpNioConnection implements Connection {
     @Override
     public void send(String data) throws IOException {
         ByteBuffer buf = ByteBuffer.wrap(data.getBytes(charset));
-        if (socket.write(buf) < 0) {
-            throw new IOException("Cannot write data to channel");
+        while (buf.hasRemaining()) {
+            if (socket.write(buf) < 0) {
+                throw new IOException("Cannot write data to channel");
+            }
         }
         switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(getSelectionKey(), OP_READ));
     }
@@ -86,7 +88,7 @@ public class TcpNioConnection implements Connection {
     @Override
     public void notification() {
         SelectionKey key = getSelectionKey();
-        if (key.isValid() && key.interestOps() == OP_READ) {
+        if (key != null && key.isValid() && key.interestOps() == OP_READ) {
             switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(key, OP_WRITE));
             selector.wakeup();
         }

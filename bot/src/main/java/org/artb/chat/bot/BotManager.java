@@ -13,14 +13,14 @@ public class BotManager  {
 
     private final List<ChatBot> bots;
 
-    public BotManager(Config config, int botsCount) {
-        bots = generateBots(config, botsCount);
+    public BotManager(Config config, int botsCount, int msgCount, int waitMs) {
+        bots = generateBots(config, botsCount, msgCount, waitMs);
     }
 
-    private List<ChatBot> generateBots(Config config, int botsCount) {
+    private List<ChatBot> generateBots(Config config, int botsCount, int msgCount, int waitMs) {
         return Stream
                 .iterate(1L, id -> id + 1)
-                .map(id -> new ChatBot(id, config))
+                .map(id -> new ChatBot(id, config, msgCount, waitMs))
                 .limit(botsCount)
                 .collect(Collectors.toList());
     }
@@ -36,11 +36,17 @@ public class BotManager  {
             for (Thread botThread : threads) {
                 botThread.join();
             }
-
         } catch (InterruptedException e) {
             LOGGER.error("", e);
         }
 
-        bots.forEach(bot -> LOGGER.info("sent {}, received {}", bot.getSentMessagesCount(), bot.getReceivedMessageCount()));
+        bots.forEach(bot -> LOGGER.info("{}: sent {}, received {}",
+                bot.getBotName(), bot.getSentMessagesCount(), bot.getReceivedMessageCount()));
+
+        int loss = bots.stream()
+                .mapToInt((bot) -> bot.getSentMessagesCount() - bot.getReceivedMessageCount())
+                .sum();
+
+        LOGGER.info("===== Total loss: {} =====", loss);
     }
 }

@@ -34,20 +34,22 @@ public class ChatBot implements Runnable {
     private final static int MAX_MSG_CONTENT_LEN = 30;
     private final static int WAIT_AFTER_FINISH_MS = 5000;
 
+    private final int waitMs;
+    private final int msgCount;
+
     private final Random random = new Random();
     private volatile ZonedDateTime startTime;
 
-    public ChatBot(Long botId, Config config) {
+    public ChatBot(Long botId, Config config, int msgCount, int waitMs) {
         this.botName = "bot-" + botId;
+        this.msgCount = msgCount;
+        this.waitMs = waitMs;
         this.processor = new TcpNioClientProcessor(
                 config.getHost(), config.getPort(), this::receive, this::disconnect);
     }
 
     @Override
     public void run() {
-        int msgCount = 50;
-        int maxWaitMs = 1000;
-
         LOGGER.info("Starting {}", botName);
         running = true;
         startTime = ZonedDateTime.now();
@@ -55,10 +57,17 @@ public class ChatBot implements Runnable {
         Thread processorThread = new Thread(processor::start, "processor-" + botName);
         processorThread.start();
 
+        while (!processor.isRunning() && running) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(50);
+            } catch (InterruptedException ignored) {
+            }
+        }
+
         for (int i = 0; i < msgCount && running; i++) {
             try {
                 LOGGER.info("sent {}, received {}", sentMsgCount.get(), receivedMsgCount.get());
-                TimeUnit.MILLISECONDS.sleep(random.nextInt(maxWaitMs));
+                TimeUnit.MILLISECONDS.sleep(waitMs + random.nextInt(50));
 
                 Message msg;
                 if (!authenticated) {
@@ -94,14 +103,18 @@ public class ChatBot implements Runnable {
                         switch (msg.getType()) {
                             case SUCCESS_AUTH:
                                 authenticated = true;
+                                receivedMsgCount.incrementAndGet();
+                                break;
                             case COMMAND_LIST:
                             case USER_LIST:
                             case USER_TEXT:
-                                receivedMsgCount.incrementAndGet();
+                                if (Objects.equals(msg.getSender(), botName)) {
+                                    receivedMsgCount.incrementAndGet();
+                                }
                         }
                     });
         } catch (IOException e) {
-            LOGGER.warn("Cannot deserialize msg", e.getMessage());
+            LOGGER.warn("Cannot deserialize msg {}", e.getMessage(), data);
         }
     }
 

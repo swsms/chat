@@ -26,4 +26,8 @@ public abstract class ClientProcessor implements Lifecycle {
     }
 
     public abstract void acceptData(String data);
+
+    public boolean isRunning() {
+        return running;
+    }
 }
