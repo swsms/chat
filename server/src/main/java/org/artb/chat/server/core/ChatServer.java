@@ -40,7 +40,8 @@ public class ChatServer implements Lifecycle {
     private final CommandFactory factory;
 
     public ChatServer(ServerConfig config) {
-        this.server = new TcpNioServerProcessor(config.getHost(), config.getPort());
+        this.server = new TcpNioServerProcessor(config.getHost(), config.getPort(),
+                connectionEvents::add, receivedDataQueue::add);
 
         this.history = new InMemoryHistoryStorage(Constants.HISTORY_SIZE);
         this.users = new InMemoryAuthUserStorage();
@@ -61,10 +62,6 @@ public class ChatServer implements Lifecycle {
     public void start() {
         startRunnables(messageProcessors, "msg-processor");
         startRunnables(connectionManagers, "con-manager");
-
-        server.setConnectionEventListener(connectionEvents::add);
-        server.setReceivedDataListener(receivedDataQueue::add);
-
         startRunnables(Collections.singletonList(server::start), "main-server");
     }
 

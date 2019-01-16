@@ -4,6 +4,4 @@ package org.artb.chat.client.core.transport;
 public interface DisconnectHandler {
 
     void handle();
-
-    static void nothing() { }
 }

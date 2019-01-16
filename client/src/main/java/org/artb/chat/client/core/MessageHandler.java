@@ -4,7 +4,6 @@ import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.command.CommandInfo;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.message.MessageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

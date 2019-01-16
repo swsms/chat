@@ -12,19 +12,16 @@ public abstract class ClientProcessor implements Lifecycle {
 
     protected volatile boolean running;
 
-    protected Consumer<String> receivedDataListener = (data) -> { };
-    protected DisconnectHandler handler = DisconnectHandler::nothing;
+    protected final Consumer<String> receivedDataListener ;
+    protected final DisconnectHandler handler;
 
-    protected ClientProcessor(String serverHost, int serverPort) {
+    protected ClientProcessor(String serverHost, int serverPort,
+                              Consumer<String> receivedDataListener,
+                              DisconnectHandler handler) {
+
         this.serverHost = serverHost;
         this.serverPort = serverPort;
-    }
-
-    public void setReceivedDataListener(Consumer<String> receivedDataListener) {
         this.receivedDataListener = receivedDataListener;
-    }
-
-    public void setDisconnectHandler(DisconnectHandler handler) {
         this.handler = handler;
     }
 

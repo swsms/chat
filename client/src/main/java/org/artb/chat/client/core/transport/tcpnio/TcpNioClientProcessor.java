@@ -1,7 +1,8 @@
 package org.artb.chat.client.core.transport.tcpnio;
 
 import org.artb.chat.client.core.transport.ClientProcessor;
-import org.artb.chat.common.transport.BufferedConnection;
+import org.artb.chat.client.core.transport.DisconnectHandler;
+import org.artb.chat.common.transport.Connection;
 import org.artb.chat.common.transport.tcpnio.NioUtils;
 import org.artb.chat.common.transport.tcpnio.SwitchKeyInterestOpsTask;
 import org.artb.chat.common.transport.tcpnio.TcpNioConnection;
@@ -15,6 +16,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import static java.nio.channels.SelectionKey.*;
 
@@ -22,12 +24,14 @@ public class TcpNioClientProcessor extends ClientProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpNioClientProcessor.class);
 
     private Selector selector;
-    private BufferedConnection connection;
+    private Connection connection;
 
     private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
 
-    public TcpNioClientProcessor(String serverHost, int serverPort) {
-        super(serverHost, serverPort);
+    public TcpNioClientProcessor(String serverHost, int serverPort,
+                                 Consumer<String> receivedDataListener,
+                                 DisconnectHandler handler) {
+        super(serverHost, serverPort, receivedDataListener, handler);
     }
 
     private void configure() throws IOException {
@@ -39,8 +43,7 @@ public class TcpNioClientProcessor extends ClientProcessor {
         socket.connect(new InetSocketAddress(serverHost, serverPort));
         socket.register(selector, OP_CONNECT);
 
-        this.connection = new BufferedConnection(
-                new TcpNioConnection(UUID.randomUUID(), selector, socket, switchTasks));
+        this.connection = new TcpNioConnection(UUID.randomUUID(), selector, socket, switchTasks::add);
     }
 
     public void start() {

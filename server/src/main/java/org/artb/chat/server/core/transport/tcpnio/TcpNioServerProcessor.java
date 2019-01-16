@@ -1,6 +1,5 @@
 package org.artb.chat.server.core.transport.tcpnio;
 
-import org.artb.chat.common.transport.BufferedConnection;
 import org.artb.chat.common.transport.Connection;
 import org.artb.chat.common.transport.tcpnio.NioUtils;
 import org.artb.chat.common.transport.tcpnio.SwitchKeyInterestOpsTask;
@@ -21,6 +20,7 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import static java.nio.channels.SelectionKey.OP_ACCEPT;
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -34,8 +34,10 @@ public class TcpNioServerProcessor extends ServerProcessor {
     private final Map<UUID, Connection> connections = new ConcurrentHashMap<>();
     private final Queue<SwitchKeyInterestOpsTask> switchTasks = new ConcurrentLinkedQueue<>();
 
-    public TcpNioServerProcessor(String host, int port) {
-        super(host, port);
+    public TcpNioServerProcessor(String host, int port,
+                                 Consumer<ConnectionEvent> connectionEventListener,
+                                 Consumer<ReceivedData> receivedDataListener) {
+        super(host, port, connectionEventListener, receivedDataListener);
     }
 
     private void configure() throws IOException {
@@ -91,7 +93,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
 
     @Override
     public void acceptData(UUID clientId, String data) {
-        BufferedConnection connection = (BufferedConnection) connections.get(clientId);
+        Connection connection = connections.get(clientId);
         connection.putInBuffer(data);
         connection.notification();
     }
@@ -129,10 +131,10 @@ public class TcpNioServerProcessor extends ServerProcessor {
         UUID clientId = UUID.randomUUID();
 
         final SocketChannel clientSocket;
-        final BufferedConnection connection;
+        final Connection connection;
         try {
             clientSocket = ((ServerSocketChannel) key.channel()).accept();
-            connection = new BufferedConnection(new TcpNioConnection(clientId, selector, clientSocket, switchTasks));
+            connection = new TcpNioConnection(clientId, selector, clientSocket, switchTasks::add);
 
             clientSocket.configureBlocking(false);
             clientSocket.register(selector, OP_READ, connection);
@@ -165,7 +167,7 @@ public class TcpNioServerProcessor extends ServerProcessor {
     }
 
     private void write(SelectionKey key) {
-        BufferedConnection connection = (BufferedConnection) key.attachment();
+        Connection connection = (Connection) key.attachment();
         try {
             connection.flush();
         } catch (IOException e) {

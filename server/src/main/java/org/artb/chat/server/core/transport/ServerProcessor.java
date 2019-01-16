@@ -1,6 +1,7 @@
 package org.artb.chat.server.core.transport;
 
 import org.artb.chat.common.Lifecycle;
+import org.artb.chat.common.transport.Connection;
 import org.artb.chat.server.core.ReceivedData;
 import org.artb.chat.server.core.event.ConnectionEvent;
 
@@ -16,21 +17,16 @@ public abstract class ServerProcessor implements Lifecycle {
 
     protected volatile boolean running;
 
-    /* (something) -> { } is a function for default listeners to avoid nulls */
-    protected Consumer<ConnectionEvent> connectionEventListener = (event) -> { };
-    protected Consumer<ReceivedData> receivedDataListener = (data) -> { };
+    protected final Consumer<ConnectionEvent> connectionEventListener;
+    protected final Consumer<ReceivedData> receivedDataListener;
 
-    public ServerProcessor(String host, int port) {
+    public ServerProcessor(String host, int port,
+                           Consumer<ConnectionEvent> connectionEventListener,
+                           Consumer<ReceivedData> receivedDataListener) {
         this.host = host;
         this.port = port;
-    }
-
-    public void setReceivedDataListener(Consumer<ReceivedData> receivedDataListener) {
+        this.connectionEventListener = connectionEventListener;
         this.receivedDataListener = receivedDataListener;
-    }
-
-    public void setConnectionEventListener(Consumer<ConnectionEvent> listener) {
-        this.connectionEventListener = listener;
     }
 
     public abstract void acceptData(UUID clientId, String data);

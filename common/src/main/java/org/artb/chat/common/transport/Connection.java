@@ -4,7 +4,7 @@ import org.artb.chat.common.Identifiable;
 
 import java.io.IOException;
 
-public interface Connection extends Identifiable  {
+public interface Connection extends Identifiable, HasBuffer  {
 
     void send(String data) throws IOException;
 

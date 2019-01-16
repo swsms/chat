@@ -33,13 +33,8 @@ public class ChatClient implements Lifecycle {
     public ChatClient(Config config, InputStream input) {
         this.reader = new MessageReader(this::send, input, authenticated);
         this.handler = new MessageHandler(display, receivedDataQueue, authenticated);
-
-        this.processor = new TcpNioClientProcessor(config.getHost(), config.getPort());
-        this.processor.setReceivedDataListener(receivedDataQueue::add);
-        this.processor.setDisconnectHandler(() -> {
-            this.stop();
-            display.print("Disconnected from the server. Press any key to exit the client program.");
-        });
+        this.processor = new TcpNioClientProcessor(config.getHost(), config.getPort(),
+                receivedDataQueue::add, this::handleDisconnect);
     }
 
     public ChatClient(Config config) {
@@ -53,6 +48,11 @@ public class ChatClient implements Lifecycle {
         } catch (IOException e) {
             LOGGER.error("Cannot serialize msg: {}", msg, e);
         }
+    }
+
+    private void handleDisconnect() {
+        this.stop();
+        display.print("Disconnected from the server. Press any key to exit the client program.");
     }
 
     @Override

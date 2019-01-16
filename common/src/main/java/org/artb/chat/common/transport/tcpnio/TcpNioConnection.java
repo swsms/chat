@@ -1,7 +1,9 @@
 package org.artb.chat.common.transport.tcpnio;
 
 import org.artb.chat.common.Constants;
+import org.artb.chat.common.Utils;
 import org.artb.chat.common.transport.Connection;
+import org.artb.chat.common.transport.HasBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,8 +12,12 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
@@ -24,15 +30,16 @@ public class TcpNioConnection implements Connection {
 
     private final ByteBuffer buffer = ByteBuffer.allocate(Constants.BUFFER_SIZE);
     private final Charset charset = StandardCharsets.UTF_8;
-    private final Queue<SwitchKeyInterestOpsTask> switchTasks;
+    private final Consumer<SwitchKeyInterestOpsTask> switchTaskConsumer;
+    private final Queue<String> dataBuffer = new ConcurrentLinkedQueue<>();
 
     public TcpNioConnection(UUID id, Selector selector,
                             SocketChannel socket,
-                            Queue<SwitchKeyInterestOpsTask> switchTasks) {
+                            Consumer<SwitchKeyInterestOpsTask> switchTaskConsumer) {
         this.id = id;
         this.selector = selector;
         this.socket = socket;
-        this.switchTasks = switchTasks;
+        this.switchTaskConsumer = switchTaskConsumer;
     }
 
     @Override
@@ -52,7 +59,7 @@ public class TcpNioConnection implements Connection {
         if (socket.write(buf) < 0) {
             throw new IOException("Cannot write data to channel");
         }
-        switchTasks.add(new SwitchKeyInterestOpsTask(getSelectionKey(), OP_READ));
+        switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(getSelectionKey(), OP_READ));
     }
 
     @Override
@@ -80,9 +87,24 @@ public class TcpNioConnection implements Connection {
     public void notification() {
         SelectionKey key = getSelectionKey();
         if (key.isValid() && key.interestOps() == OP_READ) {
-            switchTasks.add(new SwitchKeyInterestOpsTask(key, OP_WRITE));
+            switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(key, OP_WRITE));
             selector.wakeup();
         }
+    }
+
+    @Override
+    public void flush() throws IOException {
+        String next;
+        List<String> messages = new ArrayList<>();
+        while ((next = dataBuffer.poll()) != null) {
+            messages.add(next);
+        }
+        send(Utils.createBatch(messages));
+    }
+
+    @Override
+    public void putInBuffer(String data) {
+        dataBuffer.add(data);
     }
 
     @Override
@@ -90,6 +112,7 @@ public class TcpNioConnection implements Connection {
         SelectionKey key = getSelectionKey();
         key.cancel();
         socket.close();
+        dataBuffer.clear();
     }
 
     private SelectionKey getSelectionKey() {
