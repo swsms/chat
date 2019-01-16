@@ -108,9 +108,11 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         SelectionKey key = getSelectionKey();
-        key.cancel();
+        if (key != null) {
+            key.cancel();
+        }
         socket.close();
         dataBuffer.clear();
     }

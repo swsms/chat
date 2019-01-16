@@ -75,6 +75,7 @@ public class TcpNioClientProcessor extends ClientProcessor {
             if (connection != null) {
                 connection.close();
             }
+            selector.close();
         } catch (IOException e) {
             LOGGER.error("Cannot close socket", e);
         } finally {

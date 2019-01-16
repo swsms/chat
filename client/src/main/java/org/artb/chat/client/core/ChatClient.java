@@ -69,7 +69,7 @@ public class ChatClient implements Lifecycle {
             Thread handlerThread = new Thread(handler, "msg-handler");
             handlerThread.start();
         } else {
-            LOGGER.warn("Client has bee already started");
+            LOGGER.warn("Client has been already started.");
         }
     }
 

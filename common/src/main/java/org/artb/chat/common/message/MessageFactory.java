@@ -20,6 +20,10 @@ public class MessageFactory {
         return new Message(content, MessageType.USER_TEXT, NOT_IMPORTANT_SENDER);
     }
 
+    public static Message newUserMessage(String content, String sender) {
+        return new Message(content, MessageType.USER_TEXT, sender);
+    }
+
     public static Message newAuthMessage(String content) {
         return new Message(content, MessageType.TRY_AUTH, NOT_IMPORTANT_SENDER);
     }
