@@ -57,3 +57,18 @@ The server supports parameters which specify the number of message processor thr
 ```
 java -jar server/target/chat-server-*.jar --msg-processors 4 --con-managers 2
 ```
+
+## Chat bot
+
+There is also a chat bot that generates server load. To start it the server should be already running with a suitable number of message processors and connection managers like:
+```
+java -jar server/target/chat-server-*.jar --msg-processors 4 --con-managers 4
+```
+Starting chat bot:
+```
+java -jar bot/target/chat-bot-*.jar
+```
+It creates 50 bots, and each one writes exactly 50 messages to the server having the pause 500 milliseconds (a bit more). 
+After that, the information on the lost messages is displayed.
+
+Currently, bot still does not support parameters other than **--host** and **--port**.
