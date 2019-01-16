@@ -40,7 +40,6 @@ public class RenameCommand implements Command {
             storage.upsertUserName(userId, newName);
 
             String text = String.format(USER_IS_RENAMED_TEMPLATE, oldName, newName);
-            sender.sendPersonal(userId, newServerMessage(SUCCESSFULLY_RENAMED));
             sender.sendBroadcast(newServerMessage(text));
         } catch (InvalidNameException e) {
             LOGGER.info(e.getMessage());
