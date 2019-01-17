@@ -13,6 +13,4 @@ public interface Connection extends Identifiable, HasBuffer  {
     boolean connect() throws IOException;
 
     void close() throws IOException;
-
-    void notification();
 }

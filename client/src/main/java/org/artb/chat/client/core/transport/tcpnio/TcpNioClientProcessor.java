@@ -88,7 +88,6 @@ public class TcpNioClientProcessor extends ClientProcessor {
         synchronized (this) {
             if (connection != null) {
                 connection.putInBuffer(data);
-                connection.notification();
             } else {
                 LOGGER.warn("Cannot send {} for {}, connection is null", data);
             }

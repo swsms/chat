@@ -3,7 +3,6 @@ package org.artb.chat.common.transport.tcpnio;
 import org.artb.chat.common.Constants;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.transport.Connection;
-import org.artb.chat.common.transport.HasBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -23,7 +22,6 @@ import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
 
 public class TcpNioConnection implements Connection {
-
     private final UUID id;
     private final Selector selector;
     private final SocketChannel socket;
@@ -33,7 +31,9 @@ public class TcpNioConnection implements Connection {
     private final Consumer<SwitchKeyInterestOpsTask> switchTaskConsumer;
     private final Queue<String> dataBuffer = new ConcurrentLinkedQueue<>();
 
-    public TcpNioConnection(UUID id, Selector selector,
+
+    public TcpNioConnection(UUID id,
+                            Selector selector,
                             SocketChannel socket,
                             Consumer<SwitchKeyInterestOpsTask> switchTaskConsumer) {
         this.id = id;
@@ -66,7 +66,6 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public String take() throws IOException {
-        buffer.clear();
         int read;
         StringBuilder builder = new StringBuilder();
 
@@ -86,27 +85,24 @@ public class TcpNioConnection implements Connection {
     }
 
     @Override
-    public void notification() {
-        SelectionKey key = getSelectionKey();
-        if (key != null && key.isValid() && key.interestOps() == OP_READ) {
-            switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(key, OP_WRITE));
-            selector.wakeup();
-        }
-    }
-
-    @Override
-    public void flush() throws IOException {
+    public synchronized void flush() throws IOException {
         String next;
         List<String> messages = new ArrayList<>();
         while ((next = dataBuffer.poll()) != null) {
             messages.add(next);
         }
-        send(Utils.createBatch(messages));
+        String batch = Utils.createBatch(messages);
+        send(batch);
     }
 
     @Override
-    public void putInBuffer(String data) {
+    public synchronized void putInBuffer(String data) {
         dataBuffer.add(data);
+        SelectionKey key = getSelectionKey();
+        if (key != null && key.isValid() && key.interestOps() == OP_READ) {
+            switchTaskConsumer.accept(new SwitchKeyInterestOpsTask(key, OP_WRITE));
+            selector.wakeup();
+        }
     }
 
     @Override
