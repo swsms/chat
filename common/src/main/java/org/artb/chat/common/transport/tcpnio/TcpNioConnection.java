@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static java.nio.channels.SelectionKey.OP_WRITE;
+import static org.artb.chat.common.Constants.STOP_CHAR;
 
 public class TcpNioConnection implements Connection {
     private final UUID id;
@@ -55,7 +56,7 @@ public class TcpNioConnection implements Connection {
 
     @Override
     public void send(String data) throws IOException {
-        ByteBuffer buf = ByteBuffer.wrap(data.getBytes(charset));
+        ByteBuffer buf = ByteBuffer.wrap((data + STOP_CHAR).getBytes(charset));
         while (buf.hasRemaining()) {
             if (socket.write(buf) < 0) {
                 throw new IOException("Cannot write data to channel");

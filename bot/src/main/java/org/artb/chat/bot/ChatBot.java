@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.lang3.RandomUtils;
 import org.artb.chat.client.core.transport.ClientProcessor;
 import org.artb.chat.client.core.transport.tcpnio.TcpNioClientProcessor;
+import org.artb.chat.common.transport.tcpnio.TempDataStorage;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.configs.BotConfig;
 import org.artb.chat.common.message.Message;
@@ -37,6 +38,8 @@ public class ChatBot implements Runnable {
 
     private final BotConfig config;
     private volatile ZonedDateTime startTime;
+
+    private final TempDataStorage tempStorage = new TempDataStorage();
 
     public ChatBot(long botId, BotConfig config) {
         this.botName = "bot-" + botId;
@@ -84,10 +87,10 @@ public class ChatBot implements Runnable {
                 String jsonMsg = Utils.serialize(msg);
                 processor.acceptData(jsonMsg);
 
-                // to prevent sending too more auth messages
-                while (running && !authenticated) {
-                    TimeUnit.MILLISECONDS.sleep(SMALL_WAITING_MS);
-                }
+                // wait for success auth to prevent sending too much auth messages
+//                while (running && !authenticated) {
+//                    TimeUnit.MILLISECONDS.sleep(SMALL_WAITING_MS);
+//                }
 
                 sentMsgCount.incrementAndGet();
             } catch (InterruptedException ignored) {
@@ -97,28 +100,30 @@ public class ChatBot implements Runnable {
         }
     }
 
-    private void receive(String data) {
-        try {
-            List<Message> messages = Utils.deserializeMessageList(data);
-            messages.stream()
-                    .filter(msg -> msg.getCreated().isAfter(startTime)) // skipping history
-                    .forEach(msg -> {
-                        switch (msg.getType()) {
-                            case SUCCESS_AUTH:
-                                authenticated = true;
-                            case COMMAND_LIST:
-                            case USER_LIST:
-                                receivedMsgCount.incrementAndGet();
-                                break;
-                            case USER_TEXT:
-                                if (Objects.equals(msg.getSender(), botName)) {
-                                    receivedMsgCount.incrementAndGet();
-                                }
-                        }
-                    });
-        } catch (IOException e) {
-            LOGGER.warn("Cannot deserialize msg {}", e.getMessage(), data);
-        }
+    private void receive(String receivedData) {
+        tempStorage.extractNextData(receivedData)
+                .ifPresent((data) -> {
+                    try {
+                        Utils.deserializeMessageList(data).stream()
+                                .filter(msg -> msg.getCreated().isAfter(startTime)) // skipping history
+                                .forEach(msg -> {
+                                    switch (msg.getType()) {
+                                        case SUCCESS_AUTH:
+                                            authenticated = true;
+                                        case COMMAND_LIST:
+                                        case USER_LIST:
+                                            receivedMsgCount.incrementAndGet();
+                                            break;
+                                        case USER_TEXT:
+                                            if (Objects.equals(msg.getSender(), botName)) {
+                                                receivedMsgCount.incrementAndGet();
+                                            }
+                                    }
+                                });
+                    } catch (IOException e) {
+                        LOGGER.warn("Cannot deserialize msg {}", e.getMessage(), data);
+                    }
+                });
     }
 
 

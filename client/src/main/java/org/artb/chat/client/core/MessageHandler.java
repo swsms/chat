@@ -1,5 +1,6 @@
 package org.artb.chat.client.core;
 
+import org.artb.chat.common.transport.tcpnio.TempDataStorage;
 import org.artb.chat.client.ui.UIDisplay;
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.command.CommandInfo;
@@ -22,6 +23,7 @@ public class MessageHandler implements Runnable {
     private final UIDisplay display;
     private final BlockingQueue<String> dataQueue;
     private final long TIMEOUT_MILLIS = 200;
+    private final TempDataStorage tempStorage = new TempDataStorage();
 
     private AtomicBoolean authenticated;
 
@@ -43,13 +45,17 @@ public class MessageHandler implements Runnable {
             } catch (InterruptedException e) {
                 return;
             }
-            try {
-                if (receivedData != null) {
-                    List<Message> messages = Utils.deserializeMessageList(receivedData);
-                    messages.forEach(this::handle);
-                }
-            } catch (IOException e) {
-                LOGGER.error("Cannot deserialize data {}", receivedData, e);
+
+            if (receivedData != null) {
+                tempStorage.extractNextData(receivedData)
+                        .ifPresent((data) -> {
+                            try {
+                                Utils.deserializeMessageList(receivedData)
+                                        .forEach(this::handle);
+                            } catch (IOException e) {
+                                LOGGER.error("Cannot deserialize data {}", receivedData, e);
+                            }
+                        });
             }
         }
     }
