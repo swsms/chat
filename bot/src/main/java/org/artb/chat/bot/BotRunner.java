@@ -2,7 +2,7 @@ package org.artb.chat.bot;
 
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.configs.Config;
-import org.artb.chat.common.configs.SettingsParseException;
+import org.artb.chat.common.configs.ConfigParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class BotRunner {
             Config config = Utils.parseFromArgsArray(args, Config.class);
             BotManager manager = new BotManager(config, BOTS_COUNT, MSG_COUNT, WAIT_MS);
             manager.start();
-        } catch (SettingsParseException e) {
+        } catch (ConfigParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
         } catch (Exception e) {
             LOGGER.error("Fatal client error", e);

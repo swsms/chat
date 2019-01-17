@@ -2,12 +2,11 @@ package org.artb.chat.common;
 
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import org.artb.chat.common.message.Message;
-import org.artb.chat.common.configs.SettingsParseException;
+import org.artb.chat.common.configs.ConfigParseException;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -65,7 +64,7 @@ public final class Utils {
         return temp;
     }
 
-    public static <T> T parseFromArgsArray(String[] args, Class<T> clazz) throws SettingsParseException {
+    public static <T> T parseFromArgsArray(String[] args, Class<T> clazz) throws ConfigParseException {
         try {
             T obj = clazz.newInstance();
             JCommander.newBuilder()
@@ -74,7 +73,7 @@ public final class Utils {
                     .parse(args);
             return obj;
         } catch (Exception e) {
-            throw new SettingsParseException(e);
+            throw new ConfigParseException(e);
         }
     }
 

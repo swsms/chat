@@ -2,7 +2,7 @@ package org.artb.chat.server;
 
 import org.artb.chat.common.Utils;
 import org.artb.chat.common.configs.ServerConfig;
-import org.artb.chat.common.configs.SettingsParseException;
+import org.artb.chat.common.configs.ConfigParseException;
 import org.artb.chat.server.core.ChatServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public class ServerRunner {
             ServerConfig config = Utils.parseFromArgsArray(args, ServerConfig.class);
             ChatServer chat = new ChatServer(config);
             chat.start();
-        } catch (SettingsParseException e) {
+        } catch (ConfigParseException e) {
             LOGGER.error("Cannot parse arguments: {}", Arrays.toString(args), e);
         } catch (Exception e) {
             LOGGER.error("Fatal server error", e);
