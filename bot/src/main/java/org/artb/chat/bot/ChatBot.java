@@ -1,10 +1,11 @@
 package org.artb.chat.bot;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.commons.lang3.RandomUtils;
 import org.artb.chat.client.core.transport.ClientProcessor;
 import org.artb.chat.client.core.transport.tcpnio.TcpNioClientProcessor;
 import org.artb.chat.common.Utils;
-import org.artb.chat.common.configs.Config;
+import org.artb.chat.common.configs.BotConfig;
 import org.artb.chat.common.message.Message;
 import org.artb.chat.common.message.MessageFactory;
 import org.slf4j.Logger;
@@ -32,20 +33,22 @@ public class ChatBot implements Runnable {
 
     private final static int MIN_MSG_CONTENT_LEN = 0;
     private final static int MAX_MSG_CONTENT_LEN = 30;
-    private final static int WAIT_AFTER_FINISH_MS = 5000;
+    private final static int SMALL_WAITING_MS = 50;
 
-    private final int waitMs;
-    private final int msgCount;
-
-    private final Random random = new Random();
+    private final BotConfig config;
     private volatile ZonedDateTime startTime;
 
-    public ChatBot(Long botId, Config config, int msgCount, int waitMs) {
+    public ChatBot(long botId, BotConfig config) {
         this.botName = "bot-" + botId;
-        this.msgCount = msgCount;
-        this.waitMs = waitMs;
+        this.config = config;
         this.processor = new TcpNioClientProcessor(
                 config.getHost(), config.getPort(), this::receive, this::disconnect);
+    }
+
+    private void disconnect() {
+        if (running) {
+            running = false;
+        }
     }
 
     @Override
@@ -59,38 +62,38 @@ public class ChatBot implements Runnable {
 
         while (!processor.isRunning() && running) {
             try {
-                TimeUnit.MILLISECONDS.sleep(50);
+                TimeUnit.MILLISECONDS.sleep(SMALL_WAITING_MS);
             } catch (InterruptedException ignored) {
             }
         }
 
-        for (int i = 0; i < msgCount && running; i++) {
+        for (int i = 0; i < config.getMsgCount() && running; i++) {
             try {
                 LOGGER.info("sent {}, received {}", sentMsgCount.get(), receivedMsgCount.get());
-                TimeUnit.MILLISECONDS.sleep(waitMs + random.nextInt(50));
+
+                int waitMs = RandomUtils.nextInt(config.getMinWaitMs(), config.getMaxWaitMs() + 1);
+                TimeUnit.MILLISECONDS.sleep(waitMs);
 
                 Message msg;
                 if (!authenticated) {
                     msg = MessageFactory.newAuthMessage(botName);
                 } else {
-                    msg = MessageFactory.newUserMessage(randomAlphabetic(MIN_MSG_CONTENT_LEN, MAX_MSG_CONTENT_LEN + 1), botName);
+                    msg = MessageFactory.newUserMessage(generateMsgContent(), botName);
                 }
 
                 String jsonMsg = Utils.serialize(msg);
                 processor.acceptData(jsonMsg);
+
+                // to prevent sending too more auth messages
+                while (running && !authenticated) {
+                    TimeUnit.MILLISECONDS.sleep(SMALL_WAITING_MS);
+                }
 
                 sentMsgCount.incrementAndGet();
             } catch (InterruptedException ignored) {
             } catch (JsonProcessingException e) {
                 LOGGER.warn("Cannot serialize msg", e.getMessage());
             }
-        }
-
-        try {
-            TimeUnit.MILLISECONDS.sleep(WAIT_AFTER_FINISH_MS);
-        } catch (InterruptedException ignored) {
-        } finally {
-            processor.stop();
         }
     }
 
@@ -103,10 +106,10 @@ public class ChatBot implements Runnable {
                         switch (msg.getType()) {
                             case SUCCESS_AUTH:
                                 authenticated = true;
-                                receivedMsgCount.incrementAndGet();
-                                break;
                             case COMMAND_LIST:
                             case USER_LIST:
+                                receivedMsgCount.incrementAndGet();
+                                break;
                             case USER_TEXT:
                                 if (Objects.equals(msg.getSender(), botName)) {
                                     receivedMsgCount.incrementAndGet();
@@ -118,21 +121,23 @@ public class ChatBot implements Runnable {
         }
     }
 
-    private void disconnect() {
+
+    public void stop() {
         if (running) {
             running = false;
+            processor.stop();
         }
     }
 
-//    private String generateMsgContent() {
-//        List<String> commands = Arrays.asList("/help", "/users");
-//        int choice = random.nextInt(15);
-//
-//        if (choice < commands.size()) {
-//            return commands.get(choice);
-//        }
-//        return randomAlphabetic(MIN_MSG_CONTENT_LEN, MAX_MSG_CONTENT_LEN + 1);
-//    }
+    private String generateMsgContent() {
+        List<String> commands = Arrays.asList("/help", "/users");
+        int choice = RandomUtils.nextInt(0, 15);
+
+        if (choice < commands.size()) {
+            return commands.get(choice);
+        }
+        return randomAlphabetic(MIN_MSG_CONTENT_LEN, MAX_MSG_CONTENT_LEN + 1);
+    }
 
     public int getReceivedMessageCount() {
         return receivedMsgCount.get();
