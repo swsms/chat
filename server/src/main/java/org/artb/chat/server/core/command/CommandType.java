@@ -3,7 +3,7 @@ package org.artb.chat.server.core.command;
 public enum CommandType {
     HELP("/help", "show the list of commands"),
     EXIT("/exit", "leave the chat"),
-    RENAME("/rename", "change your name to a new one (e.g. /rename John)"),
+    RENAME("/rename", "change your name to a new one (e.g. /rename John), the name may contain spaces."),
     USERS("/users", "show all connected users");
 
     CommandType(String value, String desc) {

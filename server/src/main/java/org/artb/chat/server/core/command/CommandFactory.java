@@ -29,7 +29,7 @@ public class CommandFactory {
      * @return command or a special type DoNothingCommand
      */
     public Command createCommandForUser(UUID userId, String content) throws CommandParsingException {
-        String[] cmdWithParams = content.split("\\s+");
+        String[] cmdWithParams = content.split("\\s+", 2); // looks like [0]: command, [1]: all data after the command
 
         CommandType type = CommandType.findCommandType(cmdWithParams[0]);
 
