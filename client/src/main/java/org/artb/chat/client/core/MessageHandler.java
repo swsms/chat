@@ -87,4 +87,8 @@ public class MessageHandler implements Runnable {
     public void stop() {
         running = false;
     }
+
+    public AtomicBoolean isAuthenticated() {
+        return authenticated;
+    }
 }

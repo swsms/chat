@@ -93,14 +93,6 @@ public class UtilsTest {
     }
 
     @Test
-    public void testCreateNewListWithMessage() {
-        List<Integer> famousNumbers = Arrays.asList(1, 1, 2, 3, 5, 8);
-        List<Integer> newFamousNumbers = Utils.createNewListWithMessage(0, famousNumbers);
-        assertEquals(newFamousNumbers.size(), famousNumbers.size() + 1);
-        assertEquals((int) newFamousNumbers.get(0), 0);
-    }
-
-    @Test
     public void testSerializeList() throws IOException {
         List<CommandInfo> commands = Arrays.asList(
                 new CommandInfo("/help", "help"),

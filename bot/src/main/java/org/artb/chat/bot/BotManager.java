@@ -40,7 +40,7 @@ public class BotManager  {
             LOGGER.error("", e);
         }
 
-        bots.forEach(bot -> LOGGER.info("{}: sent {}, received {}",
+        bots.forEach(bot -> LOGGER.info("{}: sent {}, received {} (own)",
                 bot.getBotName(), bot.getSentMessagesCount(), bot.getReceivedMessageCount()));
 
         int loss = bots.stream()

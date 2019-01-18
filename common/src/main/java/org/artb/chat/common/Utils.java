@@ -57,13 +57,6 @@ public final class Utils {
                 .withNano(0);
     }
 
-    public static <T> List<T> createNewListWithMessage(T msg, List<T> messages) {
-        List<T> temp = new ArrayList<>();
-        temp.add(msg);
-        temp.addAll(messages);
-        return temp;
-    }
-
     public static <T> T parseFromArgsArray(String[] args, Class<T> clazz) throws ConfigParseException {
         try {
             T obj = clazz.newInstance();
@@ -75,14 +68,6 @@ public final class Utils {
         } catch (Exception e) {
             throw new ConfigParseException(e);
         }
-    }
-
-    /**
-     * Input list format looks like [a, b, c, d]
-     */
-    public static List<String> parseList(String stringList) {
-        String values = stringList.substring(1, stringList.length() - 1);
-        return Arrays.asList(values.split("\\s*,\\s*"));
     }
 
     public static <T> String serializeList(List<T> items) throws IOException {

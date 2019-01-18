@@ -8,12 +8,12 @@ public class MessageFactory {
      * The server knows the actual name and will reset it before broadcast.
      * This is used just to avoid nulls.
      */
-    private final static String NOT_IMPORTANT_SENDER = "not-important";
+    public final static String NOT_IMPORTANT_SENDER = "not-important";
     /**
      * Actually, all server messages have special type which determines that this is really a server.
      * This is used just to avoid nulls.
      */
-    private final static String SERVER_SENDER = "server";
+    public final static String SERVER_SENDER = "server";
 
 
     public static Message newUserMessage(String content) {
